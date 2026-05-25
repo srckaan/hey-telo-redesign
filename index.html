@@ -1,0 +1,2471 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="author" content="Kaan Sürücü – kaan@surucu.de" />
+<title>Hey Telo — Die Telefon-KI für Haustechnik-Betriebe</title>
+<link rel="stylesheet" href="assets/telo.css" />
+<style>
+  /* ============================================================
+   * Base
+   * ============================================================ */
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg-primary-light); overflow-x: hidden; }
+  a { color: inherit; text-decoration: none; }
+  img { max-width: 100%; display: block; }
+  button { font-family: inherit; }
+
+  /* Brand icon */
+  .brand-icon {
+    width: 28px; height: 28px;
+    object-fit: contain; flex: none; display: block;
+  }
+  .brand {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: var(--font-display); font-weight: 700;
+    font-size: 20px; letter-spacing: -0.01em; color: var(--text-primary);
+    white-space: nowrap;
+  }
+
+  /* ============================================================
+   * Header
+   * ============================================================ */
+  .site-header {
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+    z-index: 100; width: calc(100% - 32px); max-width: 1200px;
+  }
+  .nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px 10px 22px;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: 1px solid transparent;
+    border-radius: 9999px;
+    box-shadow: none;
+    transition: background 280ms var(--ease-out),
+                border-color 280ms var(--ease-out),
+                box-shadow 280ms var(--ease-out),
+                backdrop-filter 280ms var(--ease-out),
+                -webkit-backdrop-filter 280ms var(--ease-out);
+  }
+  .nav.scrolled {
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border-color: rgba(255, 255, 255, 0.7);
+    box-shadow: 0 8px 32px -8px rgba(14, 36, 33, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+  .nav-links {
+    display: flex; gap: 28px; font-size: 15px; font-weight: 500;
+    color: var(--text-primary);
+  }
+  .nav-links a { transition: color var(--t-fast) var(--ease-out); }
+  .nav-links a:hover { color: var(--color-primary); }
+  .nav-right { display: flex; align-items: center; gap: 8px; }
+  .nav-link-login {
+    padding: 8px 14px; font-size: 14px; font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  /* Mobile nav (hamburger + dropdown) — activated under 900px */
+  .nav-toggle {
+    display: none;
+    flex-direction: column; justify-content: center; gap: 5px;
+    width: 44px; height: 44px; padding: 0 11px; margin-left: 4px;
+    border: 0; background: transparent; cursor: pointer; border-radius: 9999px;
+    flex: none;
+  }
+  .nav-toggle span {
+    display: block; width: 22px; height: 2px; border-radius: 2px;
+    background: var(--text-primary);
+    transition: transform .25s var(--ease-out), opacity .2s var(--ease-out);
+  }
+  .nav-toggle.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .nav-toggle.open span:nth-child(2) { opacity: 0; }
+  .nav-toggle.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  .mobile-menu {
+    display: none;
+    position: fixed; top: 80px; left: 16px; right: 16px; z-index: 99;
+    flex-direction: column; gap: 2px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 24px;
+    box-shadow: 0 16px 40px -10px rgba(14, 36, 33, 0.22);
+  }
+  .mobile-menu[hidden] { display: none; }
+  .mobile-menu a {
+    padding: 13px 14px; border-radius: 14px;
+    font-size: 16px; font-weight: 500; color: var(--text-primary);
+    transition: background var(--t-fast) var(--ease-out);
+  }
+  .mobile-menu a:hover, .mobile-menu a:active { background: rgba(14, 36, 33, 0.06); }
+  .mobile-menu .mm-cta { margin-top: 8px; padding: 0; }
+  .mobile-menu .mm-cta:hover { background: transparent; }
+
+  /* ============================================================
+   * Hero card
+   * ============================================================ */
+  /* position+z-index so the CTA box, when it dips below the hero, paints
+     above the logo slider that follows. */
+  .hero-wrap { padding: 88px 16px 16px; position: relative; z-index: 1; }
+  .hero {
+    position: relative;
+    /* Fit the green hero + the logo strip below it within one viewport on
+       all desktop heights. 235px ≈ header offset (88) + wrap bottom (16) +
+       visible logo strip (~112) + a small buffer. */
+    height: calc(100vh - 235px);
+    min-height: 470px; max-height: 880px;
+    border-radius: 36px;
+    /* No overflow:hidden — the CTA box is allowed to dip past the bottom edge
+       so it bridges onto the logo slider (see .phone-cta-wrap drop below).
+       The background still clips to the radius; the vignette is rounded too. */
+    background: url("assets/hero_background.png") center/cover no-repeat,
+                #112E2A;
+    color: #fff;
+    /* Bottom pad reserves room above the dropped CTA box so the centered copy
+       clears it. Matches the dropped box's top edge (≈ boxHeight − dip). */
+    padding: 88px 56px 180px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  /* subtle dark vignette to ensure text readability */
+  .hero::before {
+    content: ""; position: absolute; inset: 0;
+    border-radius: 36px;
+    background: radial-gradient(ellipse at 65% 25%, rgba(0,0,0,0) 35%, rgba(8, 28, 25, 0.35) 80%);
+    pointer-events: none;
+  }
+  .hero > * { position: relative; z-index: 1; }
+
+  .glass {
+    background: rgba(255, 255, 255, 0.13);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.25),
+                0 8px 24px -12px rgba(0,0,0,0.25);
+  }
+
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 8px 18px 8px 10px;
+    border-radius: 9999px;
+    color: #fff; font-size: 14px; font-weight: 500;
+    margin-bottom: 36px;
+  }
+  .hero-badge-dot {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--color-secondary);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--color-primary-dark);
+    flex: none;
+  }
+
+  .hero h1 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    /* Scale with width AND height so short desktop screens get smaller type,
+       leaving more breathing room above the CTA box. */
+    font-size: clamp(40px, min(6.6vw, 8.6vh), 92px);
+    line-height: 1.02;
+    letter-spacing: -0.015em;
+    text-align: center;
+    margin: 0 0 clamp(16px, 2.6vh, 28px);
+    text-wrap: balance;
+    color: #fff;
+  }
+  .hero h1 .line2 { color: var(--color-secondary); font-style: italic; }
+
+  .hero-sub {
+    max-width: 720px; text-align: center;
+    font-size: clamp(16px, 1.7vh, 19px); line-height: 1.55;
+    color: rgba(255, 255, 255, 0.85);
+    margin: 0;
+    text-wrap: pretty;
+  }
+
+  .hero-center {
+    display: flex; flex-direction: column; align-items: center;
+    width: 100%;
+  }
+  .hero-bottom {
+    position: absolute; bottom: 32px; left: 56px; right: 56px;
+    display: flex; justify-content: space-between; align-items: flex-end;
+    gap: 24px; z-index: 1;
+  }
+
+  /* Rating box */
+  .rating {
+    display: inline-flex; align-items: center; gap: 14px;
+    padding: 14px 20px;
+    border-radius: 9999px;
+    color: #fff;
+  }
+  .rating-google {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: none;
+  }
+  .rating-stars { display: inline-flex; gap: 2px; }
+  .rating-stars svg { color: #FFD24A; }
+  .rating-score { font-size: 15px; font-weight: 600; }
+
+  /* Phone CTA box */
+  .phone-cta-wrap {
+    display: flex; flex-direction: column; gap: 10px;
+    padding: 16px 16px 12px;
+    border-radius: 20px;
+    max-width: 340px;
+  }
+  .phone-cta-title {
+    color: #fff; font: 600 15px var(--font-display);
+    margin: 0; letter-spacing: -0.01em;
+  }
+  .phone-cta-sub {
+    color: rgba(255,255,255,0.7); font: 400 13px var(--font-sans);
+    margin: 0; line-height: 1.4;
+  }
+  .phone-cta {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 0;
+  }
+  .phone-cta-input-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px 6px 12px;
+    border-radius: 9999px;
+    background: rgba(255,255,255,0.13);
+    border: 1px solid rgba(255,255,255,0.28);
+  }
+  .phone-cta .ht-mark { width: 32px; height: 32px; font-size: 17px; }
+  .phone-cta .divider { width: 1px; height: 24px; background: rgba(255,255,255,0.3); }
+  .phone-cta input {
+    flex: 1; border: 0; outline: 0; background: transparent;
+    color: #fff; font: 500 15px var(--font-sans);
+    padding: 8px 4px;
+  }
+  .phone-cta input::placeholder { color: rgba(255,255,255,0.65); }
+  .phone-cta select {
+    border: 0; outline: 0; background: transparent;
+    color: #fff; font: 500 14px var(--font-sans);
+    cursor: pointer; padding: 8px 4px 8px 6px;
+    -webkit-appearance: none; appearance: none;
+    flex: none;
+  }
+  .phone-cta select option { color: #000; background: #fff; }
+  .phone-cta button {
+    border: 0; cursor: pointer;
+    padding: 12px 22px; border-radius: 9999px;
+    background: var(--color-secondary); color: var(--color-primary-dark);
+    font: 600 14px var(--font-sans);
+    transition: background var(--t-base) var(--ease-out);
+  }
+  .phone-cta button:hover { background: #b8df6a; }
+
+  /* ============================================================
+   * Logo strip
+   * ============================================================ */
+  .logos {
+    padding: 80px 0 64px;
+    overflow: hidden;
+  }
+  .logos-head {
+    max-width: 1100px; margin: 0 auto 30px;
+    padding: 0 var(--container-pad);
+    display: flex; align-items: center; gap: 24px;
+  }
+  .logos-head .rule { flex: 1; height: 1px; background: var(--border-light); }
+  .logos-head .label {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: 18px; color: var(--text-primary);
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+  }
+  .logo-marquee {
+    position: relative;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+            mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+  .logo-track {
+    display: flex; gap: 64px; width: max-content;
+    animation: marquee 40s linear infinite;
+  }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  .logo-item {
+    display: inline-flex; align-items: center; gap: 12px;
+    color: #6B7280; font-family: var(--font-sans); font-weight: 700;
+    font-size: 22px; letter-spacing: -0.005em;
+    opacity: 0.85;
+    flex: none;
+  }
+  .logo-item svg { color: #6B7280; }
+
+  /* ============================================================
+   * Section helpers
+   * ============================================================ */
+  .section { padding: 120px 0; }
+  .section-tight { padding: 96px 0; }
+  .container {
+    max-width: 1200px; margin: 0 auto;
+    padding: 0 var(--container-pad);
+  }
+  .pill-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+    font-size: 13px; font-weight: 500;
+  }
+  .pill-badge::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--color-secondary-dark);
+  }
+  .pill-badge-icon::before { content: none; }
+  .pill-badge-icon { gap: 6px; }
+  .sect-head { text-align: center; max-width: 760px; margin: 0 auto 64px; }
+  .sect-head h2 {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: clamp(32px, 4.2vw, 52px);
+    line-height: 1.08; letter-spacing: -0.015em;
+    color: var(--text-primary);
+    margin: 20px 0 18px;
+    text-wrap: balance;
+  }
+  .sect-head p {
+    font-size: 18px; line-height: 1.55; color: var(--text-body);
+    margin: 0 auto; max-width: 640px;
+    text-wrap: pretty;
+  }
+
+  /* ============================================================
+   * Section 3 — Intro (list layout)
+   * ============================================================ */
+  .intro-grid {
+    display: grid; grid-template-columns: 1.05fr 1fr;
+    gap: 80px; align-items: start;
+  }
+  .intro-left h2 {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: clamp(36px, 4vw, 52px);
+    line-height: 1.05; letter-spacing: -0.015em;
+    margin: 18px 0 24px;
+    color: var(--text-primary);
+    text-wrap: balance;
+  }
+  .intro-left p {
+    font-size: 18px; line-height: 1.55; color: var(--text-body);
+    margin: 0;
+    max-width: 520px;
+  }
+  .wave-emoji {
+    display: inline-block;
+    transform-origin: 70% 70%;
+  }
+  .wave-emoji.play { animation: waveAnim 0.7s ease-in-out 2; }
+  @keyframes waveAnim {
+    0%, 100% { transform: rotate(0); }
+    25% { transform: rotate(-22deg); }
+    75% { transform: rotate(22deg); }
+  }
+
+  .feat-list { display: flex; flex-direction: column; gap: 28px; margin: 0; padding: 0; list-style: none; }
+  .feat-row { display: flex; gap: 20px; align-items: flex-start; }
+  .feat-row .icon-tile {
+    background: var(--accent-pastel-lime); color: #3D5A18;
+  }
+  .feat-row:nth-child(2) .icon-tile { background: var(--color-primary-light); color: var(--color-primary); }
+  .feat-row:nth-child(3) .icon-tile { background: var(--accent-pastel-sand); color: #8a5a14; }
+  .feat-row h4 {
+    font-family: var(--font-display); font-weight: 700; font-size: 20px;
+    color: var(--text-primary); margin: 0 0 6px; line-height: 1.2;
+  }
+  .feat-row p { font-size: 15px; line-height: 1.55; color: var(--text-body); margin: 0; }
+
+  /* ============================================================
+   * Section 4 — Benefits (cards)
+   * ============================================================ */
+  .benefits {
+    background: var(--bg-primary-dark);
+    border-radius: 36px;
+    margin: 0 16px;
+    padding: 72px 56px;
+    color: #fff;
+  }
+  .benefits .sect-head h2 { color: #fff; }
+  .benefits .sect-head p { color: rgba(255,255,255,0.72); }
+  .benefits .pill-badge {
+    background: rgba(255,255,255,0.10);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+  .benefits .pill-badge::before { background: var(--color-secondary); }
+
+  /* Hero block at top of the benefits panel (text + photo) */
+  .benefits-hero {
+    display: grid; grid-template-columns: 1.05fr 1fr;
+    gap: 64px; align-items: center;
+    max-width: 1100px; margin: 0 auto;
+  }
+  .benefits-hero-copy h2 {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: clamp(34px, 4vw, 52px);
+    line-height: 1.06; letter-spacing: -0.015em;
+    color: #fff; margin: 20px 0 22px;
+    text-wrap: balance;
+  }
+  .benefits-hero-copy p {
+    font-size: 17px; line-height: 1.6;
+    color: rgba(255,255,255,0.72); margin: 0;
+    max-width: 520px;
+    text-wrap: pretty;
+  }
+  .benefits-hero-media {
+    position: relative;
+    aspect-ratio: 1310 / 1200;
+    max-width: 480px; justify-self: center;
+    max-width: 520px; margin-left: auto;
+    width: 100%;
+  }
+  .benefits-blob {
+    position: absolute;
+    width: 78%; aspect-ratio: 1;
+    right: -10%; top: -8%;
+    background: var(--color-secondary);
+    border-radius: 50%;
+    z-index: 0;
+    opacity: 0.55;
+    filter: saturate(85%);
+  }
+  .benefits-photo {
+    position: relative; z-index: 1;
+    width: 100%; height: 100%;
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,0.4),
+                inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+  .benefits-photo img {
+    width: 100%; height: 100%;
+    object-fit: cover; display: block;
+  }
+  .benefits-chip {
+    position: absolute; z-index: 2;
+    left: -22px; bottom: 32px;
+    display: inline-flex; align-items: center; gap: 12px;
+    padding: 10px 16px 10px 12px;
+    border-radius: 9999px;
+    background: rgba(20, 38, 35, 0.72);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    border: 1px solid rgba(255,255,255,0.18);
+    color: #fff;
+    font-size: 13px; font-weight: 500;
+    box-shadow: 0 12px 28px -10px rgba(0,0,0,0.5);
+  }
+  .benefits-chip-dot {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--color-secondary); color: var(--color-primary-dark);
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: none;
+    position: relative;
+  }
+  .benefits-chip-dot::after {
+    content: ""; position: absolute; inset: -4px;
+    border-radius: 50%;
+    border: 2px solid var(--color-secondary);
+    opacity: 0.45;
+    animation: chipPulse 2s ease-out infinite;
+  }
+  @keyframes chipPulse {
+    0% { transform: scale(0.85); opacity: 0.6; }
+    100% { transform: scale(1.4); opacity: 0; }
+  }
+  .benefits-chip-meta { display: flex; flex-direction: column; gap: 2px; line-height: 1.1; }
+  .benefits-chip-meta strong { font-weight: 600; font-size: 13px; }
+  .benefits-chip-meta span { font-size: 11px; color: rgba(255,255,255,0.65); }
+
+  .bcards {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+  }
+  .bcard {
+    background: var(--bg-secondary-light);
+    border: 1px solid var(--border-light);
+    border-radius: 24px;
+    padding: 32px;
+    display: flex; flex-direction: column; gap: 18px;
+    min-height: 260px;
+  }
+  .bcard .icon-tile {
+    background: var(--color-primary-light); color: var(--color-primary);
+    width: 52px; height: 52px;
+  }
+  .bcard h4 {
+    font-family: var(--font-display); font-weight: 700; font-size: 22px;
+    color: var(--text-primary); margin: 0; line-height: 1.2;
+  }
+  .bcard p { font-size: 15px; line-height: 1.55; color: var(--text-body); margin: 0; }
+  .bcard .num {
+    margin-top: auto; font-family: var(--font-display);
+    font-size: 13px; color: var(--color-primary);
+    letter-spacing: 0.04em;
+  }
+  .benefits-aftermath {
+    max-width: 1200px; margin: 56px auto 0;
+    padding: 0 16px;
+    display: flex; flex-direction: column; gap: 40px;
+  }
+  .benefits-cta { text-align: center; }
+  .btn-lime {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 16px 28px; border-radius: 9999px;
+    background: var(--color-secondary); color: var(--color-primary-dark);
+    border: 0; cursor: pointer;
+    font: 600 16px var(--font-sans);
+    transition: background var(--t-base) var(--ease-out);
+  }
+  .btn-lime:hover { background: #b8df6a; }
+  .btn-outline-light {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 16px 28px; border-radius: 9999px;
+    background: transparent; color: #fff;
+    border: 1px solid rgba(255,255,255,0.35);
+    cursor: pointer; font: 600 16px var(--font-sans);
+    transition: background var(--t-base) var(--ease-out);
+  }
+  .btn-outline-light:hover { background: rgba(255,255,255,0.08); }
+
+  /* ============================================================
+   * Section 5 — Integrations (orbit)
+   * ============================================================ */
+  .orbit-stage {
+    position: relative;
+    width: min(640px, 100%); height: 520px;
+    margin: 24px auto 32px;
+    overflow: hidden;
+  }
+  .orbit-ring {
+    position: absolute; inset: 0;
+    border: 1px dashed rgba(32, 81, 76, 0.22);
+    border-radius: 50%;
+  }
+  .orbit-ring.r1 { inset: 80px; }
+  .orbit-ring.r2 { inset: 30px; }
+  .orbit-ring.r3 { inset: 130px; }
+  .orbit-center {
+    position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: 120px; height: 120px;
+    border-radius: 32px;
+    background: var(--color-primary); color: var(--color-secondary);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-weight: 700; font-size: 56px;
+    box-shadow: 0 24px 48px -16px rgba(14, 36, 33, 0.4);
+    z-index: 3;
+  }
+  .orbit-rotator {
+    position: absolute; inset: 0;
+    animation: orbitSpin 30s linear infinite;
+  }
+  @keyframes orbitSpin { to { transform: rotate(360deg); } }
+  .partner {
+    position: absolute;
+    width: 96px; height: 96px;
+    border-radius: 12px;
+    background: #fff;
+    border: 1px solid var(--border-light);
+    box-shadow: 0 12px 28px -10px rgba(14, 36, 33, 0.15);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    animation: counterSpin 30s linear infinite;
+  }
+  @keyframes counterSpin { to { transform: rotate(-360deg); } }
+  .partner.p1 { left: calc(50% - 48px); top: 10px; }
+  .partner.p2 { left: 99px; bottom: 112px; }
+  .partner.p3 { right: 99px; bottom: 112px; }
+
+  .orbit-note {
+    max-width: 600px; margin: 0 auto; text-align: center;
+    font-size: 16px; line-height: 1.55; color: var(--text-body);
+  }
+
+  /* ============================================================
+   * Section 6 — Use cases
+   * ============================================================ */
+  .ucards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .ucard {
+    background: var(--color-primary-dark);
+    border-radius: 24px;
+    padding: 28px;
+    display: flex; flex-direction: column; gap: 20px;
+    min-height: 320px;
+    transition: background var(--t-base) var(--ease-out);
+  }
+  .ucard:hover { background: var(--color-primary-dark); }
+  .ucard-top { display: flex; align-items: center; justify-content: space-between; }
+  .ucard h4 {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: 22px; color: #fff; margin: 0; line-height: 1.2;
+  }
+  .ucard p {
+    font-size: 15px; line-height: 1.55; color: rgba(255,255,255,0.68);
+    margin: 0;
+  }
+  .play-btn {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--color-secondary); color: var(--color-primary-dark);
+    border: 0; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: transform var(--t-base) var(--ease-out), background var(--t-base) var(--ease-out);
+    flex: none;
+  }
+  .play-btn:hover { transform: scale(1.06); background: #fff; }
+  .audio-bars { display: flex; align-items: center; gap: 3px; height: 28px; margin-top: auto; }
+  .audio-bars span {
+    display: inline-block; width: 3px; border-radius: 2px;
+    background: var(--color-secondary); opacity: 0.5;
+    transform-origin: center;
+    transition: opacity 0.2s var(--ease-out);
+  }
+  .audio-bars.playing span {
+    opacity: 1;
+    animation: eqBounce var(--dur, 600ms) ease-in-out infinite;
+    animation-delay: var(--del, 0ms);
+  }
+  @keyframes eqBounce {
+    0%, 100% { transform: scaleY(0.25); }
+    50% { transform: scaleY(1.5); }
+  }
+
+  /* ============================================================
+   * Section 7 — Trust badges
+   * ============================================================ */
+  .trust { background: var(--bg-secondary-light); }
+  .trust-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 56px; }
+  .trust-card {
+    background: #fff; border-radius: 24px; padding: 40px 32px;
+    text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+  }
+  .trust-seal {
+    width: 88px; height: 88px; border-radius: 24px;
+    background: var(--color-primary-light); color: var(--color-primary);
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .trust-card:nth-child(2) .trust-seal { background: var(--accent-pastel-lime); color: #3D5A18; }
+  .trust-card:nth-child(3) .trust-seal { background: var(--accent-pastel-sand); color: #8a5a14; }
+  .trust-card h4 {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: 22px; margin: 0; color: var(--text-primary);
+  }
+  .trust-card p { font-size: 15px; line-height: 1.55; color: var(--text-body); margin: 0; max-width: 280px; }
+
+  /* ============================================================
+   * Section 7b — Proof / Vorteile (bento)
+   * ============================================================ */
+  .proof-panel {
+    background: var(--bg-secondary-light);
+    border-radius: 36px;
+    padding: 24px;
+    margin-top: 56px;
+  }
+  .proof-bento {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    align-items: stretch;
+  }
+  .proof-col { display: flex; flex-direction: column; gap: 18px; }
+  .proof-col > .pcard { flex: 1 0 auto; }
+  /* right column: Kundenzufriedenheit on top, then Garantie, then Workflows */
+  .pb-zufrieden { order: 1; }
+  .pb-garantie  { order: 2; }
+  .pb-workflow  { order: 3; }
+  .pcard {
+    background: #fff;
+    border: 1px solid var(--border-light);
+    border-radius: 24px;
+    padding: 28px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .pcard h4 {
+    font-family: var(--font-display); font-weight: 700; font-size: 21px;
+    color: var(--text-primary); margin: 4px 0 0; line-height: 1.2;
+  }
+  .pcard > p { font-size: 14.5px; line-height: 1.55; color: var(--text-body); margin: 0; }
+  .pcard-visual { margin-top: auto; padding-top: 18px; }
+
+  .pb-garantie  .icon-tile { background: var(--color-primary-light); color: var(--color-primary); }
+  .pb-invest    .icon-tile { background: var(--accent-pastel-lime);   color: #3D5A18; }
+  .pb-nachweis  .icon-tile { background: var(--accent-pastel-sand);   color: #8a5a14; }
+  .pb-entlastung .icon-tile { background: var(--color-primary-light); color: var(--color-primary); }
+  .pb-workflow  .icon-tile { background: var(--accent-pastel-blue);   color: #1D4ED8; }
+  .pb-zufrieden .icon-tile { background: var(--color-primary-light);  color: var(--color-primary); }
+
+  /* uptime strokes — vertical lines that drift right→left, one faded (the 0,01 %) */
+  .pv-wave {
+    position: relative;
+    height: 60px;
+    background: var(--bg-secondary-light); border: 1px solid var(--border-light);
+    border-radius: 16px; padding: 12px 16px; overflow: hidden;
+  }
+  .pv-wave::before,
+  .pv-wave::after {
+    content: ''; position: absolute; top: 0; bottom: 0; width: 5%; z-index: 1; pointer-events: none;
+  }
+  .pv-wave::before { left: 0; background: linear-gradient(to right, var(--bg-secondary-light), transparent); }
+  .pv-wave::after  { right: 0; background: linear-gradient(to left,  var(--bg-secondary-light), transparent); }
+  .pv-wave-track {
+    position: absolute; top: 12px; bottom: 12px; left: 16px;
+    display: flex; align-items: stretch; gap: 3px; width: max-content;
+    animation: pvWaveScroll 22s linear infinite;
+  }
+  .pv-wave-track span {
+    flex: none; width: 5px; border-radius: 3px;
+    background: linear-gradient(to top, var(--color-primary), var(--color-secondary));
+  }
+  .pv-wave-track span.pv-down { opacity: 0.16; }
+  @keyframes pvWaveScroll { to { transform: translateX(calc(-50% - 1.5px)); } }
+  @media (prefers-reduced-motion: reduce) { .pv-wave-track { animation: none; } }
+  .pv-uptime {
+    text-align: center; margin-top: 14px;
+    font-family: var(--font-display); font-weight: 700; font-size: 20px;
+    color: var(--color-primary);
+  }
+  .pv-uptime span { font-family: var(--font-sans); font-weight: 600; font-size: 14px; color: var(--text-muted); }
+
+  /* savings chart */
+  .pv-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: 9999px; margin-bottom: 12px;
+    background: var(--accent-pastel-lime); color: #3D5A18;
+    font-size: 13px; font-weight: 600;
+  }
+  .pv-chart { display: flex; align-items: flex-end; gap: 4px; height: 110px; }
+  .pv-chart span {
+    flex: 1 1 0; border-radius: 4px 4px 0 0;
+    background: linear-gradient(to top, var(--color-primary), var(--color-secondary));
+  }
+
+  /* mini dashboard */
+  .pv-dash {
+    background: var(--bg-secondary-light); border: 1px solid var(--border-light);
+    border-radius: 16px; padding: 16px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .pv-dash-head { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--text-muted); }
+  .pv-dash-row { display: flex; flex-direction: column; gap: 6px; }
+  .pv-dash-row .l { display: flex; align-items: baseline; justify-content: space-between; font-size: 13px; color: var(--text-body); }
+  .pv-dash-row .l b { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--text-primary); }
+  .pv-dash-track { height: 6px; border-radius: 9999px; background: #E8EBEE; overflow: hidden; }
+  .pv-dash-track i { display: block; height: 100%; border-radius: 9999px; background: linear-gradient(to right, var(--color-primary), var(--color-secondary-dark)); transition: width .9s cubic-bezier(.22,.61,.36,1); }
+  @media (prefers-reduced-motion: reduce) { .pv-dash-track i { transition: none; } }
+
+  /* toggles */
+  .pv-toggles { display: flex; flex-direction: column; gap: 10px; }
+  .pv-trow {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--bg-secondary-light); border: 1px solid var(--border-light);
+    border-radius: 12px; padding: 9px 12px;
+  }
+  .pv-trow > svg { color: var(--color-primary); flex: none; }
+  .pv-trow > span { flex: 1; font-size: 13.5px; font-weight: 500; color: var(--text-primary); }
+  .pv-switch { width: 38px; height: 22px; border-radius: 9999px; background: var(--color-primary); position: relative; flex: none; }
+  .pv-switch::after { content: ""; position: absolute; top: 3px; left: 19px; width: 16px; height: 16px; border-radius: 50%; background: #fff; }
+
+  /* satisfaction — animated stat tiles */
+  .pv-stats { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: 10px; }
+  .pv-stat {
+    background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary) 55%, var(--color-secondary-dark));
+    border-radius: 14px;
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .pv-stat b {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: 28px; line-height: 1; color: var(--color-secondary);
+    font-variant-numeric: tabular-nums;
+  }
+  .pv-stat span { font-size: 12.5px; line-height: 1.3; font-weight: 500; color: rgba(255, 255, 255, 0.82); }
+
+  /* team-relief photo with brand gradient overlay */
+  .pv-photo {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    aspect-ratio: 16 / 5;
+  }
+  .pv-photo img {
+    width: 100%; height: 100%; object-fit: cover; object-position: center 28%;
+    display: block;
+  }
+  .pv-photo::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, var(--color-primary), var(--color-secondary));
+    opacity: 0.80;
+    mix-blend-mode: multiply;
+  }
+
+  /* ============================================================
+   * Section 8 — Flow (scroll-driven serpentine timeline)
+   * ============================================================ */
+  .flow {
+    position: relative;
+    max-width: 1080px;
+    margin: 72px auto 0;
+  }
+  .flow-svg {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    overflow: visible;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .flow-track {
+    stroke: var(--color-primary-light);
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .flow-progress {
+    stroke: url(#flowGrad);
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    filter: drop-shadow(0 4px 12px rgba(138, 184, 74, 0.35));
+    transition: stroke-dashoffset 0.08s linear;
+  }
+  .flow-head {
+    fill: var(--color-secondary);
+    stroke: #fff;
+    stroke-width: 3;
+    opacity: 0;
+    filter: drop-shadow(0 4px 12px rgba(138, 184, 74, 0.55));
+    transition: opacity 0.25s var(--ease-out);
+  }
+
+  .flow-list {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 80px;
+    row-gap: 8px;
+    list-style: none;
+    margin: 0; padding: 0;
+  }
+  .flow-step {
+    display: flex; align-items: center; gap: 22px;
+    padding: 28px;
+    border-radius: 28px;
+    background: transparent;
+    border: 1px solid transparent;
+    transition: background 0.5s var(--ease-out),
+                border-color 0.5s var(--ease-out),
+                box-shadow 0.5s var(--ease-out),
+                transform 0.5s var(--ease-out);
+  }
+  .flow-step:nth-child(1) { grid-column: 1; grid-row: 1; }
+  .flow-step:nth-child(2) { grid-column: 2; grid-row: 2; flex-direction: row-reverse; text-align: right; }
+  .flow-step:nth-child(3) { grid-column: 1; grid-row: 3; }
+
+  .flow-num {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: #fff;
+    border: 2px solid var(--color-primary-light);
+    color: var(--text-muted);
+    font-family: var(--font-display); font-weight: 700; font-size: 26px;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: none;
+    z-index: 2;
+    transition: background 0.45s var(--ease-out),
+                color 0.45s var(--ease-out),
+                border-color 0.45s var(--ease-out),
+                transform 0.45s var(--ease-out),
+                box-shadow 0.45s var(--ease-out);
+  }
+  .flow-text h4 {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: 23px; color: var(--text-primary); margin: 0 0 8px;
+  }
+  .flow-text p {
+    font-size: 15.5px; line-height: 1.55; color: var(--text-body);
+    margin: 0; max-width: 360px;
+  }
+
+  /* active state — line has reached this step */
+  .flow-step.active {
+    background: var(--accent-pastel-green);
+    border-color: rgba(32, 81, 76, 0.10);
+    box-shadow: 0 18px 40px -22px rgba(14, 36, 33, 0.45);
+    transform: translateY(-2px);
+  }
+  .flow-step.active .flow-num {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--color-secondary);
+    transform: scale(1.06);
+    box-shadow: 0 12px 26px -10px rgba(14, 36, 33, 0.5);
+  }
+
+  @media (max-width: 760px) {
+    .flow { margin-top: 48px; }
+    .flow-list { grid-template-columns: 1fr; column-gap: 0; row-gap: 18px; }
+    .flow-step,
+    .flow-step:nth-child(1),
+    .flow-step:nth-child(2),
+    .flow-step:nth-child(3) {
+      grid-column: 1; grid-row: auto;
+      flex-direction: row; text-align: left;
+      padding: 22px 22px 22px 20px;
+    }
+    .flow-num { width: 54px; height: 54px; font-size: 22px; }
+    .flow-text p { max-width: none; }
+  }
+
+  /* ============================================================
+   * Section 9 — Demo (cal.com)
+   * ============================================================ */
+  .demo { background: var(--bg-secondary-light); }
+  .demo-card {
+    width: 100%; margin: 0 auto;
+    background: #fff; border-radius: 32px; overflow: hidden;
+    box-shadow: var(--shadow-overlay);
+    padding: 16px;
+  }
+  .cal-frame {
+    width: 100%;
+    border-radius: 20px; background: #fff;
+    overflow: hidden;
+  }
+  /* Cal.com injiziert ein iframe — volle Breite, Höhe wächst automatisch mit dem Inhalt (kein Scrollen) */
+  .cal-frame iframe { width: 100% !important; border: 0; display: block; }
+
+  /* ============================================================
+   * Section 10 — Testimonials
+   * ============================================================ */
+  .tgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .tcard {
+    background: var(--bg-secondary-light); border-radius: 24px;
+    padding: 32px;
+    display: flex; flex-direction: column; gap: 18px;
+  }
+  .tcard .stars { display: flex; gap: 2px; color: #FFB800; }
+  .tcard blockquote {
+    font-family: var(--font-sans); font-weight: 700;
+    font-size: 20px; line-height: 1.35; letter-spacing: -0.005em;
+    color: var(--text-primary); margin: 0;
+    text-wrap: pretty;
+  }
+  .tcard .attrib {
+    display: flex; align-items: center; gap: 12px; margin-top: auto;
+  }
+  .tavatar {
+    width: 44px; height: 44px; min-width: 44px; flex: none; border-radius: 50%;
+    background: var(--color-primary-light); color: var(--color-primary);
+    font-family: var(--font-display); font-weight: 700; font-size: 16px;
+    display: inline-flex; align-items: center; justify-content: center;
+    object-fit: cover;
+  }
+  .tcard .who { font-size: 14px; font-weight: 600; color: var(--text-primary); line-height: 1.2; }
+  .tcard .firm { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+  .tcard.featured {
+    background: var(--color-primary); color: #fff;
+    grid-column: span 1;
+  }
+  .tcard.featured blockquote, .tcard.featured .who { color: #fff; }
+  .tcard.featured .firm { color: rgba(255,255,255,0.7); }
+  .tcard.featured .tavatar { background: var(--color-secondary); color: var(--color-primary-dark); }
+
+  /* ============================================================
+   * Section 11 — FAQ
+   * ============================================================ */
+  .faq-wrap { display: flex; flex-direction: column; gap: 48px; }
+  .faq-side { text-align: center; }
+  .faq-side h2 {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: clamp(32px, 3.5vw, 44px); line-height: 1.08;
+    letter-spacing: -0.015em; color: var(--text-primary);
+    margin: 18px 0 16px;
+  }
+  .faq-side p { font-size: 16px; line-height: 1.55; color: var(--text-body); margin: 0 auto 24px; max-width: 560px; }
+  .faq-side .contact-link {
+    display: inline-flex; align-items: center; gap: 8px;
+    color: var(--color-primary); font-weight: 600;
+    border-bottom: 1px solid var(--color-primary);
+    padding-bottom: 2px;
+  }
+  .faq-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 0 56px; }
+  .faq-col { display: flex; flex-direction: column; }
+  .faq-list { display: flex; flex-direction: column; }
+  .faq-item {
+    border-top: 1px solid var(--border-light);
+  }
+  .faq-item:last-child { border-bottom: 1px solid var(--border-light); }
+  .faq-q {
+    width: 100%; text-align: left; background: transparent; border: 0; cursor: pointer;
+    padding: 24px 0;
+    display: flex; justify-content: space-between; align-items: center; gap: 24px;
+    font-family: var(--font-display); font-weight: 700; font-size: 18px;
+    color: var(--text-primary);
+  }
+  .faq-toggle {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--color-primary-light); color: var(--color-primary);
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: none;
+    transition: transform var(--t-base) var(--ease-out), background var(--t-base) var(--ease-out);
+  }
+  .faq-item.open .faq-toggle { background: var(--color-primary); color: var(--color-secondary); transform: rotate(45deg); }
+  .faq-a {
+    max-height: 0; overflow: hidden;
+    transition: max-height 0.35s var(--ease-out);
+  }
+  .faq-a-inner {
+    padding: 0 0 24px; font-size: 15px; line-height: 1.6;
+    color: var(--text-body); max-width: 640px;
+  }
+
+  /* ============================================================
+   * Footer
+   * ============================================================ */
+  .footer {
+    background: var(--bg-primary-dark);
+    color: var(--text-inverse);
+    padding: 96px 0 36px;
+  }
+  .footer-inner { max-width: 1200px; margin: 0 auto; padding: 0 var(--container-pad); }
+  .footer-top { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr 1fr; gap: 56px; padding-bottom: 56px; border-bottom: 1px solid rgba(255,255,255,0.10); }
+  .footer-brand .brand { color: #fff; }
+  .footer-brand .tag { font-size: 15px; line-height: 1.55; color: rgba(255,255,255,0.72); margin: 16px 0 12px; max-width: 260px; }
+  .footer-brand .heart { display: flex; align-items: center; gap: 6px; font-size: 13px; color: rgba(255,255,255,0.55); margin-bottom: 20px; }
+  .yc-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 8px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10);
+    font-size: 12px; color: rgba(255,255,255,0.85);
+  }
+  .yc-logo {
+    width: 18px; height: 18px; border-radius: 4px;
+    background: #FF6B00; color: #fff; font-weight: 700; font-size: 11px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: var(--font-sans);
+  }
+  .footer-col h4 {
+    font-size: 13px; font-weight: 600; color: #fff;
+    margin: 0 0 16px; letter-spacing: 0.02em;
+  }
+  .footer-col ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
+  .footer-col a { color: rgba(255,255,255,0.72); font-size: 14px; transition: color var(--t-fast); }
+  .footer-col a:hover { color: var(--color-secondary); }
+  .footer-col .static { color: rgba(255,255,255,0.72); font-size: 14px; line-height: 1.55; }
+  .eleven-badge {
+    margin-top: 0;
+    display: inline-flex; align-items: center;
+    padding: 0; background: none; border: none; border-radius: 0;
+  }
+  .eleven-badge img { max-height: 30px; width: auto; height: auto; display: block; align-self: flex-start; }
+  .footer-bottom {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 28px; color: rgba(255,255,255,0.55); font-size: 13px;
+  }
+  .social { display: flex; gap: 10px; }
+  .social a {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85);
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background var(--t-base);
+  }
+  .social a:hover { background: var(--color-secondary); color: var(--color-primary-dark); }
+
+  /* ============================================================
+   * Responsive (compact)
+   * ============================================================ */
+  /* Drop the CTA ("Hey Telo direkt ausprobieren") box below the hero's bottom
+     edge so its button bridges onto the logo slider. This keeps the tall box
+     clear of the centred copy, which can then sit properly centred. */
+  @media (min-width: 901px) {
+    .phone-cta-wrap { transform: translateY(80px); }
+  }
+
+  /* Nudge the centred copy lower so it reads as vertically centred above the
+     dropped CTA box (the box no longer pushes it up). */
+  @media (min-width: 1200px) and (min-height: 741px) {
+    .hero-center { transform: translateY(min(2.4vh, 34px)); }
+  }
+
+  /* Short desktop viewports (e.g. 1366×768 laptops once browser chrome is
+     subtracted): compact the copy, CTA box and logo strip so the hero and
+     the logo slider still share one screen without scrolling. */
+  @media (min-width: 901px) and (max-height: 740px) {
+    .hero { min-height: 0; padding-bottom: 120px; }
+    .hero h1 { font-size: clamp(34px, 6.4vh, 56px); margin-bottom: 12px; }
+    .hero-sub { font-size: 15px; }
+    .phone-cta-wrap { padding: 12px 14px 10px; gap: 6px; }
+    .phone-cta-title { font-size: 17px !important; }
+    .phone-cta-sub { font-size: 12px; }
+    .phone-cta { gap: 8px !important; margin-top: 4px !important; }
+    .phone-cta-input-row { padding: 4px 6px 4px 10px; }
+    .phone-cta input { padding: 6px 4px; }
+    .phone-cta button { padding: 9px 18px; }
+    .rating { padding: 10px 16px; }
+    .logos { padding-top: 16px !important; padding-bottom: 32px !important; }
+    .logos-head { margin-bottom: 18px; }
+  }
+
+  @media (max-width: 900px) {
+    /* Nav → hamburger menu */
+    .nav-links { display: none; }
+    .nav-right { display: none; }
+    .nav-toggle { display: flex; }
+    .mobile-menu { display: flex; }
+    .mobile-menu[hidden] { display: none; }
+
+    /* Section rhythm — tighter on small screens */
+    .section { padding: 72px 0; }
+    .section-tight { padding: 64px 0; }
+    .sect-head { margin-bottom: 40px; }
+
+    /* Hero → natural vertical stack: rating ABOVE the title, then copy, then CTA.
+       display:contents dissolves .hero-bottom so its children reorder around
+       the centred copy via the order property. */
+    .hero { padding: 60px 22px 60px; min-height: 0; height: auto; }
+    .hero-bottom { display: contents; }
+    .rating { order: -1; margin: 0 0 33px; }
+    .phone-cta-wrap {
+      order: 1; width: 100%; max-width: 440px; margin: 33px 0 0; transform: none;
+    }
+    .phone-cta { min-width: 0; width: 100%; }
+
+    /* Single-column grids */
+    .intro-grid { grid-template-columns: 1fr; gap: 36px; }
+    .faq-columns { grid-template-columns: 1fr; gap: 0; }
+    .bcards, .ucards, .trust-grid, .tgrid { grid-template-columns: 1fr; }
+
+    /* Benefits panel + its hero block stack */
+    .benefits { margin: 0 8px; padding: 56px 22px; border-radius: 28px; }
+    .benefits-hero { grid-template-columns: 1fr; gap: 32px; }
+    .benefits-hero-copy p { max-width: none; }
+    .benefits-hero-media { margin: 0 auto; max-width: 360px; }
+    .benefits-aftermath { margin-top: 36px; }
+
+    /* Proof bento */
+    .proof-panel { padding: 14px; border-radius: 24px; margin-top: 40px; }
+    .proof-bento { display: flex; flex-direction: column; gap: 14px; }
+
+    /* Footer */
+    .footer { padding: 64px 0 32px; }
+    .footer-top { grid-template-columns: 1fr 1fr; gap: 36px 32px; }
+  }
+
+  /* ---- Narrow orbit stage (below ~688px the stage shrinks under 640px, so the
+     fixed partner insets collide with the centre). Stop the rotation and pin the
+     logos statically in a spaced triangle — a spinning wide orbit would clip the
+     logos against the stage edges on a small stage. ---- */
+  @media (max-width: 687px) {
+    .orbit-stage { height: 440px; }
+    .orbit-rotator, .partner { animation: none; }
+    .partner { width: 84px; height: 84px; }
+    .partner.p1 { left: calc(50% - 42px); top: 8px; }
+    .partner.p2 { left: 12px; right: auto; bottom: 64px; }
+    .partner.p3 { right: 12px; left: auto; bottom: 64px; }
+  }
+
+  /* ---- Phones ---- */
+  @media (max-width: 600px) {
+    .section { padding: 56px 0; }
+    .section-tight { padding: 52px 0; }
+    .sect-head { margin-bottom: 32px; }
+
+    .hero-wrap { padding: 96px 12px 12px; }
+    .hero { padding: 52px 16px 52px; border-radius: 28px; }
+    .hero::before { border-radius: 28px; }
+    .hero h1 { font-size: clamp(28px, 8vw, 42px); }
+
+    .benefits { margin: 0; border-radius: 24px; padding: 48px 18px; }
+    .benefits-aftermath { padding: 0; }
+
+    .demo-card { padding: 10px; border-radius: 22px; }
+
+    .faq-q { font-size: 16px; padding: 20px 0; gap: 16px; }
+
+    /* Footer single column + stacked bottom bar */
+    .footer-top { grid-template-columns: 1fr; gap: 32px; }
+    .footer-bottom { flex-direction: column; align-items: flex-start; gap: 16px; }
+  }
+
+  /* ---- Small phones ---- */
+  @media (max-width: 400px) {
+    .brand { font-size: 18px; }
+    .hero h1 { font-size: clamp(26px, 7.6vw, 32px); }
+    .orbit-stage { height: 380px; }
+    .partner { width: 76px; height: 76px; }
+    .partner.p1 { left: calc(50% - 38px); }
+    .partner.p2, .partner.p3 { bottom: 56px; }
+    .benefits-chip { left: -10px; }
+  }
+</style>
+</head>
+<body data-screen-label="Hey Telo home">
+
+<!-- ================= 0 · HEADER ================= -->
+<header class="site-header" data-screen-label="00 Header">
+  <nav class="nav">
+    <span class="brand">
+      <img src="uploads/waving-hand_1f44b.png" class="brand-icon" alt="Hey Telo" />
+      <span style="font-weight: 600">Hey Telo</span>
+    </span>
+    <div class="nav-links">
+      <span>Integrationen</span>
+      <span>Preis</span>
+      <span>Blog</span>
+      <span>Kontakt</span>
+    </div>
+    <div class="nav-right">
+      <span class="nav-link-login">Login</span>
+      <button class="btn-lime" style="padding:10px 18px; font-size:14px;">Kostenlos testen</button>
+    </div>
+    <button class="nav-toggle" id="navToggle" aria-label="Menü öffnen" aria-expanded="false" aria-controls="mobileMenu">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+  <div class="mobile-menu" id="mobileMenu" hidden>
+    <a href="#integrationen">Integrationen</a>
+    <a href="#">Preis</a>
+    <a href="#">Blog</a>
+    <a href="#">Kontakt</a>
+    <a href="#" class="nav-link-login">Login</a>
+    <a href="#demo-section" class="mm-cta">
+      <button class="btn-lime" style="width:100%; justify-content:center;">Kostenlos testen</button>
+    </a>
+  </div>
+</header>
+
+<!-- ================= 1 · HERO ================= -->
+<div class="hero-wrap">
+  <section class="hero" data-screen-label="01 Hero">
+    <div class="hero-center">
+    <h1>
+      Mehr Erreichbarkeit.<br>
+      <span class="line2" style="font-style:normal;">Weniger Stress im Team.</span>
+    </h1>
+
+    <p class="hero-sub">
+      Hey Telo nimmt Ihre Anrufe persönlich entgegen, ruft Kunden wegen Terminen an und trägt alles automatisch in Ihre Handwerkersoftware ein. Spezielle Anliegen? Leitet die KI direkt an Ihr Team weiter.
+    </p>
+    </div><!-- /.hero-center -->
+
+    <div class="hero-bottom">
+      <a href="https://maps.app.goo.gl/wLhSC55UxrqGanKx7" target="_blank" rel="noopener" class="rating glass" style="cursor:pointer;">
+        <span class="rating-google">
+          <svg width="18" height="18" viewBox="0 0 48 48">
+            <path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/>
+            <path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"/>
+            <path fill="#FBBC05" d="M11.69 28.18A13.96 13.96 0 0 1 10.93 24c0-1.45.25-2.86.69-4.18v-5.7H4.34A21.99 21.99 0 0 0 2 24c0 3.55.85 6.92 2.34 9.88l7.35-5.7z"/>
+            <path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.42 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7C13.42 14.62 18.27 10.75 24 10.75z"/>
+          </svg>
+        </span>
+        <span class="rating-stars">
+          <!-- 5 stars -->
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21l1.18-6.88-5-4.87 6.91-1.01z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21l1.18-6.88-5-4.87 6.91-1.01z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21l1.18-6.88-5-4.87 6.91-1.01z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21l1.18-6.88-5-4.87 6.91-1.01z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21l1.18-6.88-5-4.87 6.91-1.01z"/></svg>
+        </span>
+        <span class="rating-score">4,9</span>
+      </a>
+
+      <div class="phone-cta-wrap glass">
+        <p class="phone-cta-title" style="font-size: 21px; font-family: Inter">Hey Telo direkt ausprobieren</p>
+        <p class="phone-cta-sub">Unsere KI ruft Sie kostenlos an und beantwortet Ihnen Ihre Fragen.</p>
+        <form class="phone-cta" onsubmit="event.preventDefault();" style="margin: 7px 0px 0px; gap: 15px">
+        <div class="phone-cta-input-row">
+        <select class="" aria-label="Ländervorwahl">
+          <option value="+49" selected>🇩🇪 +49</option>
+          <option value="+43">🇦🇹 +43</option>
+          <option value="+41">🇨🇭 +41</option>
+          <option value="+31">🇳🇱 +31</option>
+          <option value="+33">🇫🇷 +33</option>
+          <option value="+44">🇬🇧 +44</option>
+          <option value="+1">🇺🇸 +1</option>
+        </select>
+        <span class="divider"></span>
+        <input type="tel" inputmode="numeric" placeholder="Ihre Telefonnummer" autocomplete="tel" oninput="this.value=this.value.replace(/[^0-9\s\+\-\(\)]/g,'')" />
+        </div>
+        <button type="submit" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.33 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          Jetzt KI-Anruf erhalten
+        </button>
+      </form>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ================= 2 · LOGOS ================= -->
+<section class="logos" data-screen-label="02 Logos" style="padding: 24px 0px 56px">
+  <div class="logos-head">
+    <span class="rule"></span>
+    <span class="label" style="font-family: Inter; font-weight: 400; color: rgba(14, 36, 33, 0.745)">Über 200 Firmen vertrauen auf Hey Telo.</span>
+    <span class="rule"></span>
+  </div>
+  <div class="logo-marquee">
+    <div class="logo-track" id="logoTrack"></div>
+  </div>
+</section>
+
+<!-- ================= 3 · INTRO ================= -->
+<section class="section" data-screen-label="03 Intro">
+  <div class="container">
+    <div class="intro-grid">
+      <div class="intro-left">
+        <h2 style="margin: 6px 0px 24px"><span class="wave-emoji" id="waveEmoji"><img src="uploads/waving-hand_1f44b.png" style="width:1.05em;height:1.05em;object-fit:contain;display:inline;vertical-align:-0.1em;" alt="" /></span> Hey Telo. Die Telefon-KI für Haustechnik.</h2>
+        <p>Springt ein, sobald die Rufumleitung aktiv ist — in der Mittagspause, nach Feierabend oder im Urlaub. So bleibt jeder Auftrag im Haus, ohne Extra-Personal.</p>
+      </div>
+      <ul class="feat-list">
+        <li class="feat-row">
+          <span class="icon-tile">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </span>
+          <div>
+            <h4 style="font-family: Inter">Aktiv, wenn Sie es brauchen</h4>
+            <p>Rufumleitung einschalten. Hey Telo übernimmt. Ihr Team macht Pause.</p>
+          </div>
+        </li>
+        <li class="feat-row">
+          <span class="icon-tile">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+          </span>
+          <div>
+            <h4 style="font-family: Inter">Alle Infos sauber erfasst</h4>
+            <p>Name, Problem, Rechnungsempfänger, Rückrufnummer werden strukturiert abgelegt — fertig für die Dispo.</p>
+          </div>
+        </li>
+        <li class="feat-row">
+          <span class="icon-tile">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+          </span>
+          <div>
+            <h4 style="font-family: Inter">Störungen sofort weiterleiten</h4>
+            <p>Akute Notfälle direkt zum Diensthabenden. Umfragen &amp; Vertriebler werden geblockt.</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 4 · BENEFITS (dark cards) ================= -->
+<section class="section-tight" data-screen-label="04 Benefits">
+  <div class="benefits">
+    <div class="benefits-hero">
+      <div class="benefits-hero-copy">
+        <span class="pill-badge">Ihre Vorteile</span>
+        <h2>Immer erreichbar. Weniger Stress. Keine verlorenen Aufträge.</h2>
+        <p>Hey Telo nimmt jeden Anruf an, solange Ihre Rufumleitung aktiv ist. Alle Infos landen sauber im System — so kann sich Ihr Team auf Wertarbeit konzentrieren, statt auf Rückruf-Marathons.</p>
+      </div>
+      <div class="benefits-hero-media">
+        <span class="benefits-blob" aria-hidden="true" style="opacity: 1"></span>
+        <div class="benefits-photo">
+          <img src="uploads/anruf.png" alt="Servicekraft beantwortet einen eingehenden Anruf" />
+        </div>
+        <div class="benefits-chip">
+          <span class="benefits-chip-dot">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.33 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </span>
+          <div class="benefits-chip-meta">
+            <strong>Kundenanruf läuft...</strong>
+            <span>1:43 Minuten</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="benefits-aftermath">
+    <div class="bcards">
+      <article class="bcard">
+        <span class="icon-tile">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="5" width="22" height="14" rx="7"/><circle cx="16" cy="12" r="4" fill="currentColor" stroke="none"/></svg>
+        </span>
+        <h4>Aktiv, wenn Sie es brauchen</h4>
+        <p>Rufumleitung einschalten. Hey Telo übernimmt. Ihr Team macht Pause — die KI bleibt am Apparat.</p>
+        <span class="num">
+</span>
+      </article>
+      <article class="bcard">
+        <span class="icon-tile">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="6" height="6" rx="1"/><polyline points="3 17 5 19 9 15"/><line x1="13" y1="8" x2="21" y2="8"/><line x1="13" y1="12" x2="21" y2="12"/><line x1="13" y1="18" x2="21" y2="18"/></svg>
+        </span>
+        <h4>Alle Infos sauber erfasst</h4>
+        <p>Name, Problem, Rechnungsempfänger, Rückrufnummer — strukturiert abgelegt und fertig für die Dispo.</p>
+        <span class="num">
+</span>
+      </article>
+      <article class="bcard">
+        <span class="icon-tile">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+        </span>
+        <h4>Störungen sofort weiterleiten</h4>
+        <p>Akute Notfälle gehen direkt zum Diensthabenden. Umfragen und Vertriebler werden zuverlässig abgeblockt.</p>
+        <span class="num">
+</span>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 5 · USE CASES ================= -->
+<section class="section-tight" data-screen-label="05 Use cases">
+  <div class="container">
+    <div class="sect-head">
+      <span class="pill-badge">Anwendungsfälle</span>
+      <h2>Ihre Telefonkraft für jeden Zweck</h2>
+      <p>Hören Sie selbst: drei typische Gespräche, wie Hey Telo sie heute schon für Haustechnikbetriebe in ganz Deutschland führt.</p>
+    </div>
+    <div class="ucards">
+      <article class="ucard" data-audio="uploads/beratungstermin-heizung.mp3">
+        <div class="ucard-top">
+          <span class="pill-badge pill-badge-icon" style="background:rgba(200,241,122,0.18); color:#C8F17A;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m11 17 2 2a1 1 0 1 0 3-3"/><path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4"/><path d="m21 3 1 11h-2"/><path d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3"/><path d="M3 4h8"/></svg>
+            Beratungstermin
+          </span>
+          <button class="play-btn" aria-label="Beispiel abspielen">
+            <svg class="icon-play" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+            <svg class="icon-pause" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+          </button>
+        </div>
+        <h4>Beratungstermin für eine Klimaanlage</h4>
+        <p>Ein Kunde plant eine neue Klimaanlage. Hey Telo nimmt alle Wünsche und Eckdaten auf und hinterlegt die Anfrage im System.</p>
+        <div class="audio-bars" aria-hidden="true"></div>
+      </article>
+      <article class="ucard" data-audio="uploads/heizungsausfall.mp3">
+        <div class="ucard-top">
+          <span class="pill-badge pill-badge-icon" style="background:rgba(253,186,116,0.18); color:#F9B55C;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Störungsmeldung
+          </span>
+          <button class="play-btn" aria-label="Beispiel abspielen">
+            <svg class="icon-play" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+            <svg class="icon-pause" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+          </button>
+        </div>
+        <h4>Heizungsausfall, Kunde ohne Wärme</h4>
+        <p>Hey Telo erkennt die Dringlichkeit, sammelt alle relevanten Infos und leitet den Notfall direkt an den Diensthabenden weiter.</p>
+        <div class="audio-bars" aria-hidden="true"></div>
+      </article>
+      <article class="ucard" data-audio="uploads/terminplanung-wartung.mp3">
+        <div class="ucard-top">
+          <span class="pill-badge pill-badge-icon" style="background:rgba(255,255,255,0.12); color:rgba(255,255,255,0.85);">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Terminplanung
+          </span>
+          <button class="play-btn" aria-label="Beispiel abspielen">
+            <svg class="icon-play" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+            <svg class="icon-pause" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+          </button>
+        </div>
+        <h4>Jährliche Wartung der Heizung</h4>
+        <p>Kunde meldet sich für die jährliche Wartung. Hey Telo schlägt freie Slots vor, bestätigt sofort und trägt den Termin in die Dispo ein.</p>
+        <div class="audio-bars" aria-hidden="true"></div>
+      </article>
+    </div>
+    <div style="text-align:center; margin-top:48px;">
+      <a href="#demo-section" style="text-decoration:none;"><button class="btn-lime">Kostenlosen Testzugang erhalten</button></a>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 6 · INTEGRATIONS ================= -->
+<section class="section" id="integrationen" data-screen-label="06 Integrations">
+  <div class="container">
+    <div class="sect-head">
+      <span class="pill-badge">Integrationen</span>
+      <h2>Nahtlos in Ihr System integrierbar</h2>
+      <p>Hey Telo übergibt jeden Auftrag direkt in Ihre bestehende Handwerkersoftware — ohne Copy &amp; Paste, ohne doppelte Pflege.</p>
+    </div>
+
+    <div class="orbit-stage" aria-hidden="true">
+      <div class="orbit-ring r2"></div>
+      <div class="orbit-ring r1"></div>
+      <div class="orbit-ring r3"></div>
+      <div class="orbit-center" style="background: var(--accent-pastel-sand); color: rgb(123, 158, 55); background-color: rgb(184, 223, 106)">
+        <img src="uploads/waving-hand_1f44b.png" style="width:72px;height:72px;object-fit:contain;" alt="Hey Telo" />
+      </div>
+      <div class="orbit-rotator">
+        <div class="partner p1"><img src="uploads/pds.svg" style="width:72px;height:72px;object-fit:contain;" alt="pds" /></div>
+        <div class="partner p2"><img src="uploads/kwp.avif" style="width:80px;height:80px;object-fit:contain;" alt="KWP" /></div>
+        <div class="partner p3"><img src="uploads/mfr.svg" style="width:72px;height:72px;object-fit:contain;" alt="mfr" /></div>
+      </div>
+    </div>
+
+    <p class="orbit-note">Aufträge, Kundendaten und Rückrufnotizen wandern automatisch in Ihre Branchensoftware — pds, KWP und mfr sind out-of-the-box angebunden.</p>
+  </div>
+</section>
+
+<!-- ================= 7 · TRUST ================= -->
+<section class="section trust" data-screen-label="07 Trust">
+  <div class="container">
+    <div class="sect-head">
+      <h2>Entwickelt nach Deutschen Standards</h2>
+      <p>Hey Telo erfüllt die Erwartungen, die deutsche Handwerksbetriebe an Datenschutz und Verlässlichkeit benötigen — vom ersten Anruf bis zur Datenablage.</p>
+    </div>
+    <div class="trust-grid">
+      <article class="trust-card">
+        <span class="trust-seal">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+        </span>
+        <h4>DSGVO-konform</h4>
+        <p>Alle Gespräche und Daten werden gemäß deutscher und europäischer Datenschutzrichtlinien verarbeitet.</p>
+      </article>
+      <article class="trust-card">
+        <span class="trust-seal">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+        </span>
+        <h4>Entwickelt in Deutschland</h4>
+        <p>Produkt, Engineering und Support sitzen in München — kurze Wege, schnelle Antworten in Ihrer Sprache.</p>
+      </article>
+      <article class="trust-card">
+        <span class="trust-seal">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+        </span>
+        <h4>Hauptserver in Frankfurt</h4>
+        <p>Hosting bei deutschen Rechenzentren in Frankfurt am Main. Ihre Daten verlassen Deutschland nicht.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 7b · PROOF / VORTEILE ================= -->
+<section class="section" data-screen-label="07b Vorteile">
+  <div class="container">
+    <div class="sect-head">
+      <span class="pill-badge">Ihre Vorteile</span>
+      <h2>Warum Betriebe sich für Hey Telo entscheiden</h2>
+      <p>Von der ersten Minute bis zum vollen Betrieb: Hey Telo liefert Verlässlichkeit, messbaren Erfolg und zufriedenere Kunden — jederzeit nachvollziehbar im Dashboard.</p>
+    </div>
+    <div class="proof-panel">
+      <div class="proof-bento">
+
+        <div class="proof-col"><!-- left column -->
+
+        <!-- Ein Investment, das sich schnell auszahlt -->
+        <article class="pcard pb-invest">
+          <span class="icon-tile">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M15 9.354a4 4 0 1 0 0 5.292"/><path d="M7 12h5"/></svg>
+          </span>
+          <h4>Ein Investment, das sich schnell auszahlt</h4>
+          <p>Weniger verpasste Aufträge, weniger Aufwand am Telefon. Hey Telo senkt Ihre Kosten und rechnet sich oft schon im ersten Monat.</p>
+          <div class="pcard-visual">
+            <span class="pv-chip">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+              Kosten sparen
+            </span>
+            <div class="pv-chart" id="proofChart" aria-hidden="true"></div>
+          </div>
+        </article>
+
+        <!-- 3 · Nachweisbarer Erfolg -->
+        <article class="pcard pb-nachweis">
+          <span class="icon-tile">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+          </span>
+          <h4>Nachweisbarer Erfolg</h4>
+          <p>Jeder Anruf wird protokolliert und ausgewertet. Im Dashboard sehen Sie schwarz auf weiß, was Hey Telo für Sie leistet.</p>
+          <div class="pcard-visual">
+            <div class="pv-dash" aria-hidden="true">
+              <div class="pv-dash-head"><span>Übersicht · Mai</span></div>
+              <div class="pv-dash-row">
+                <div class="l"><span><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px;flex:none;opacity:0.7"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 5.86 5.86l1.59-1.59a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7a2 2 0 0 1 1.72 2.02z"/></svg>Angenommen</span><b>248</b></div>
+                <div class="pv-dash-track"><i style="width:92%"></i></div>
+              </div>
+              <div class="pv-dash-row">
+                <div class="l"><span><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px;flex:none;opacity:0.7"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>Termine gebucht</span><b>96</b></div>
+                <div class="pv-dash-track"><i style="width:64%"></i></div>
+              </div>
+              <div class="pv-dash-row">
+                <div class="l"><span><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px;flex:none;opacity:0.7"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>Weitergeleitet</span><b>12</b></div>
+                <div class="pv-dash-track"><i style="width:26%"></i></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Entlastung für Ihr Team -->
+        <article class="pcard pb-entlastung">
+          <span class="icon-tile">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </span>
+          <h4>Entlastung für Ihr Team</h4>
+          <p>Jeder Anruf wird automatisch dokumentiert – kein manuelles Nachtragen mehr nötig.</p>
+          <div class="pcard-visual">
+            <div class="pv-photo" aria-hidden="true">
+              <img src="uploads/entlastung-team.png" alt="Monteur vor dem Firmenwagen" />
+            </div>
+          </div>
+        </article>
+
+        </div><!-- /left column -->
+
+        <div class="proof-col"><!-- right column -->
+
+        <!-- Garantierte Zuverlässigkeit -->
+        <article class="pcard pb-garantie">
+          <span class="icon-tile">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+          </span>
+          <h4>Garantierte Zuverlässigkeit</h4>
+          <p>Hey Telo ist rund um die Uhr erreichbar. Mit 99,99&nbsp;% Verfügbarkeit nimmt jeder Anruf seinen Weg — Tag und Nacht.</p>
+          <div class="pcard-visual">
+            <div class="pv-wave" id="proofWave" aria-hidden="true"></div>
+            <div class="pv-uptime">99,99&nbsp;% <span>Verfügbarkeit</span></div>
+          </div>
+        </article>
+
+        <!-- Anpassbare Workflows -->
+        <article class="pcard pb-workflow">
+          <span class="icon-tile">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></svg>
+          </span>
+          <h4>Anpassbare Workflows</h4>
+          <p>Hey Telo handelt genau so, wie Sie es möchten — jederzeit selbst im Dashboard anpassbar, ganz ohne Technikteam.</p>
+          <div class="pcard-visual">
+            <div class="pv-toggles" aria-hidden="true">
+              <div class="pv-trow">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8c0-2.76-2.46-5-5.5-5S2 5.24 2 8h2l1-1 1 1h4"/><path d="M13 7.14A5.82 5.82 0 0 1 16.5 6c3.04 0 5.5 2.24 5.5 5h-3l-1-1-1 1h-3"/><path d="M5.89 9.71c-2.15 2.15-2.3 5.47-.35 7.43l4.24-4.25.7-.7.71-.71 2.12-2.12c-1.95-1.96-5.27-1.8-7.42.35z"/><path d="M11 15.5c.5 2.5-.17 4.5-1 6.5h4c2-5.5-.5-10-2-10z"/></svg>
+                <span>Hinweis Urlaubszeit</span><i class="pv-switch"></i>
+              </div>
+              <div class="pv-trow">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <span>Terminbuchung</span><i class="pv-switch"></i>
+              </div>
+              <div class="pv-trow">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 2 22 6 18 10"/><line x1="14" y1="6" x2="22" y2="6"/><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.33 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                <span>Intelligente Weiterleitung</span><i class="pv-switch"></i>
+              </div>
+              <div class="pv-trow">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
+                <span>15 unterstützte Sprachen</span><i class="pv-switch"></i>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- 5 · Erhöhte Kundenzufriedenheit -->
+        <article class="pcard pb-zufrieden">
+          <span class="icon-tile">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></svg>
+          </span>
+          <h4>Erhöhte Kundenzufriedenheit</h4>
+          <p>Höhere Erreichbarkeit, schnellere Termine und weniger Verwaltungsaufwand — Ihre Kunden merken den Unterschied sofort.</p>
+          <div class="pcard-visual">
+            <div class="pv-stats">
+              <div class="pv-stat"><b data-count="73">73%</b><span>höhere Erreichbarkeit</span></div>
+              <div class="pv-stat"><b data-count="37">37%</b><span>weniger Verwaltungsaufwand</span></div>
+              <div class="pv-stat"><b data-count="21">21%</b><span>effizientere Terminvergabe</span></div>
+              <div class="pv-stat"><b data-count="51">51%</b><span>zufriedenere Kunden</span></div>
+            </div>
+          </div>
+        </article>
+
+        </div><!-- /right column -->
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 8 · TIMELINE ================= -->
+<section class="section" data-screen-label="08 Timeline">
+  <div class="container">
+    <div class="sect-head">
+      <span class="pill-badge">Ablauf</span>
+      <h2>In kürzester Zeit einsatzbereit</h2>
+      <p>Von der ersten Anfrage bis zum ersten KI-Anruf vergeht nur wenig Zeit. So einfach läuft die Einrichtung ab.</p>
+    </div>
+    <div class="flow" id="flow">
+      <svg class="flow-svg" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="flowGrad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="100">
+            <stop offset="0"    stop-color="#20514C"/>
+            <stop offset="0.55" stop-color="#8AB84A"/>
+            <stop offset="1"    stop-color="#C8F17A"/>
+          </linearGradient>
+        </defs>
+        <path class="flow-track" fill="none"/>
+        <path class="flow-progress" fill="none"/>
+        <circle class="flow-head" r="7"/>
+      </svg>
+      <ol class="flow-list">
+        <li class="flow-step" data-step="1">
+          <span class="flow-num">1</span>
+          <div class="flow-text">
+            <h4>Testzugang beantragen</h4>
+            <p>Sie melden sich, wir bauen Ihre KI noch am selben Tag — passgenau auf Ihre Website, Ihre Leistungen und Ihre Tonalität.</p>
+          </div>
+        </li>
+        <li class="flow-step" data-step="2">
+          <span class="flow-num">2</span>
+          <div class="flow-text">
+            <h4>Demo &amp; Testzugang erhalten</h4>
+            <p>Wir demonstrieren Ihre betriebsspezifische KI, machen gemeinsam das Feintuning und geben Ihnen Zugang zum Dashboard.</p>
+          </div>
+        </li>
+        <li class="flow-step" data-step="3">
+          <span class="flow-num">3</span>
+          <div class="flow-text">
+            <h4>Schneller Live-Betrieb</h4>
+            <p>Eine einfache Rufnummern­weiterleitung genügt. Hey Telo beantwortet Anrufe, legt Infos ab und leitet bei Bedarf weiter.</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 9 · DEMO ================= -->
+<section class="section demo" id="demo-section" data-screen-label="09 Demo">
+  <div class="container">
+    <div class="sect-head">
+      <span class="pill-badge">Demo</span>
+      <h2>Kostenlose Demo buchen</h2>
+      <p>Die Hey Telo Gründer demonstrieren Ihnen persönlich und unverbindlich unsere Software in einem Meeting.</p>
+    </div>
+    <div class="demo-card">
+      <!-- Echtes Cal.com Inline-Embed → cal.com/christopher-grittner/demo?duration=20 -->
+      <div class="cal-frame" id="cal-inline" role="region" aria-label="Cal.com Buchungsoberfläche"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 10 · TESTIMONIALS ================= -->
+<section class="section" data-screen-label="10 Testimonials">
+  <div class="container">
+    <div class="sect-head">
+      <span class="pill-badge">Stimmen aus dem Handwerk</span>
+      <h2>Was Betriebe über Hey Telo sagen</h2>
+      <p>Über 200 Haustechnikbetriebe in Deutschland, Österreich und der Schweiz vertrauen Hey Telo bereits.</p>
+    </div>
+    <div class="tgrid">
+      <article class="tcard">
+        <span class="stars" aria-label="5 von 5 Sternen">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21l1.18-6.88-5-4.87 6.91-1.01z"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21l1.18-6.88-5-4.87 6.91-1.01z"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21l1.18-6.88-5-4.87 6.91-1.01z"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21l1.18-6.88-5-4.87 6.91-1.01z"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21l1.18-6.88-5-4.87 6.91-1.01z"/></svg>
+        </span>
+        <blockquote>„Wir haben endlich Mittagspause — und trotzdem geht kein Anruf mehr verloren. Allein im ersten Monat fünf neue Aufträge, die wir vorher übersehen hätten."</blockquote>
+        <div class="attrib">
+          <img class="tavatar" src="uploads/avatar-martin-bauer.png" alt="Martin Bauer" />
+          <div>
+            <div class="who">Martin Bauer</div>
+            <div class="firm">Bauer Sanitär &amp; Heizung, Augsburg</div>
+          </div>
+        </div>
+      </article>
+      <article class="tcard">
+        <span class="stars">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21l1.18-6.88-5-4.87 6.91-1.01z"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21l1.18-6.88-5-4.87 6.91-1.01z"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21l1.18-6.88-5-4.87 6.91-1.01z"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21l1.18-6.88-5-4.87 6.91-1.01z"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21l1.18-6.88-5-4.87 6.91-1.01z"/></svg>
+        </span>
+        <blockquote>„Die Übergabe in unsere KWP läuft sauber. Meine Dispo sieht Name, Anliegen, Rückrufnummer — fertig. Spart uns gefühlt zwei Stunden am Tag."</blockquote>
+        <div class="attrib">
+          <img class="tavatar" src="uploads/avatar-stefan-krüger.png" alt="Stefanie Krüger" />
+          <div>
+            <div class="who">Jürgen Krüger</div>
+            <div class="firm">SHK Krüger GmbH, Hannover</div>
+          </div>
+        </div>
+      </article>
+      <article class="tcard">
+        <span class="stars">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21l1.18-6.88-5-4.87 6.91-1.01z"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21l1.18-6.88-5-4.87 6.91-1.01z"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21l1.18-6.88-5-4.87 6.91-1.01z"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21l1.18-6.88-5-4.87 6.91-1.01z"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21l1.18-6.88-5-4.87 6.91-1.01z"/></svg>
+        </span>
+        <blockquote>„Notfälle erreichen den Bereitschaftsdienst sofort, der Rest landet sortiert in der Mailbox. Genau so, wie wir uns das vorgestellt haben."</blockquote>
+        <div class="attrib">
+          <img class="tavatar" src="uploads/avatar-tobias-lehmann.png" alt="Tobias Lehmann" />
+          <div>
+            <div class="who">Tobias Lehmann</div>
+            <div class="firm">Lehmann Haustechnik, Dresden</div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 11 · FAQ ================= -->
+<section class="section trust" data-screen-label="11 FAQ">
+  <div class="container">
+    <div class="faq-wrap">
+      <div class="faq-side">
+        <span class="pill-badge">FAQ</span>
+        <h2>Häufig gestellte Fragen</h2>
+        <p>Sie haben weitere Fragen? Unser Team meldet sich innerhalb von 24 Stunden bei Ihnen zurück.</p>
+        <span class="contact-link">Kontakt aufnehmen
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </span>
+      </div>
+      <div class="faq-columns" id="faqList">
+        <div class="faq-col">
+          <details class="faq-item" open>
+            <summary class="faq-q" style="font-family: Inter">
+              Was ist die Hey Telo Telefon-KI?
+              <span class="faq-toggle"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+            </summary>
+            <div class="faq-a"><div class="faq-a-inner">
+              Die Hey Telo Telefon-KI ist ein intelligenter Telefonassistent speziell für Haus- und Gebäudetechnikbetriebe. Sie beantwortet automatisch alle Anrufe, wenn niemand im Büro abheben kann - in der Mittagspause, nach Feierabend oder im Urlaub. Die KI erfasst Kundenanfragen, nimmt Notfälle entgegen und sorgt dafür, dass kein Auftrag verloren geht.
+            </div></div>
+          </details>
+          <details class="faq-item">
+            <summary class="faq-q" style="font-family: Inter">
+              Ersetzt die Telefon-KI meine Bürokräfte?
+              <span class="faq-toggle"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+            </summary>
+            <div class="faq-a"><div class="faq-a-inner">
+              Der KI-Verwaltungsassistent wurde entwickelt, um Teams zu unterstützen, nicht um sie zu ersetzen. Sie nimmt störende Anrufe ab, damit Ihre Mitarbeiter in Ruhe arbeiten können. Das Team hat mehr Zeit für wichtige Aufgaben und kann sich besser konzentrieren. Die KI entlastet – und stärkt Ihrem Team den Rücken.
+            </div></div>
+          </details>
+          <details class="faq-item">
+            <summary class="faq-q" style="font-family: Inter">
+              Was kann die Hey Telo Telefon-KI?
+              <span class="faq-toggle"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+            </summary>
+            <div class="faq-a"><div class="faq-a-inner">
+              Die Telefon-KI übernimmt Kundendienst, leitet Anrufe weiter, nimmt Notdienst-Anfragen entgegen und überbrückt die Mittagspause. Sie entlastet Ihre Bürokräfte von Routineanrufen, bucht Termine und legt Aufträge an. Kein Anruf geht verloren – rund um die Uhr.
+            </div></div>
+          </details>
+          <details class="faq-item">
+            <summary class="faq-q" style="font-family: Inter">
+              Wo sehe ich die Anrufdaten und wie kann ich die Telefon-KI anpassen?
+              <span class="faq-toggle"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+            </summary>
+            <div class="faq-a"><div class="faq-a-inner">
+              Im benutzerfreundlichen Hey Telo-Dashboard ist es möglich, ganz ohne technische Kenntnisse, Informationen über Ihren Betrieb, Preise, Öffnungszeiten, und vieles mehr einzustellen.
+            </div></div>
+          </details>
+          <details class="faq-item">
+            <summary class="faq-q" style="font-family: Inter">
+              Brauche ich dafür eine spezielle Telefonanlage?
+              <span class="faq-toggle"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+            </summary>
+            <div class="faq-a"><div class="faq-a-inner">
+              Nein. Hey Telo funktioniert mit jeder Anlage (klassisch oder Cloud). Die Einrichtung übernehmen wir oder Ihr IT-Personal.
+            </div></div>
+          </details>
+        </div>
+        <div class="faq-col">
+          <details class="faq-item">
+            <summary class="faq-q" style="font-family: Inter">
+              Ist Hey Telo DSGVO-konform?
+              <span class="faq-toggle"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+            </summary>
+            <div class="faq-a"><div class="faq-a-inner">
+              Ja, Datenschutz hat für uns höchste Priorität. Wir sind ein DSGVO-konformer Betrieb seit Tag 1.
+            </div></div>
+          </details>
+          <details class="faq-item">
+            <summary class="faq-q" style="font-family: Inter">
+              Kann ich Hey Telo mit meinen Systemen verbinden?
+              <span class="faq-toggle"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+            </summary>
+            <div class="faq-a"><div class="faq-a-inner">
+              Ja, wir haben zahlreiche Integrationen, die man innerhalb von nur wenigen Klicks verbinden kann. Beispielsweise können die Programme von pds, KWP oder mfr verbunden werden.
+            </div></div>
+          </details>
+          <details class="faq-item">
+            <summary class="faq-q" style="font-family: Inter">
+              Wie viele Anrufe kann die KI parallel abwickeln?
+              <span class="faq-toggle"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+            </summary>
+            <div class="faq-a"><div class="faq-a-inner">
+              Beliebig viele! Hey Telo kann pro Betrieb mehr als 1.000 Anrufe ohne Probleme gleichzeitig annehmen. Bei Bedarf kann dieses Limit auch erhöht werden.
+            </div></div>
+          </details>
+          <details class="faq-item">
+            <summary class="faq-q" style="font-family: Inter">
+              Muss die KI erst lange trainiert werden?
+              <span class="faq-toggle"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+            </summary>
+            <div class="faq-a"><div class="faq-a-inner">
+              Nein. Nach einer 45-minütigen Online-Einführung ist die Telefon-KI einsatzbereit und passend auf Ihre Prozesse eingestellt.
+            </div></div>
+          </details>
+          <details class="faq-item">
+            <summary class="faq-q" style="font-family: Inter">
+              Wie kann ich den KI-Verwaltungsassistenten anfangen zu nutzen?
+              <span class="faq-toggle"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+            </summary>
+            <div class="faq-a"><div class="faq-a-inner">
+              Sie müssen dazu nur zwei Schritte ausführen:<br><br>
+              1. Kostenlose Demo buchen<br>
+              2. Telefon verbinden – Das macht unser Team mit Ihnen zusammen<br><br>
+              Fertig! Ab sofort erhöht sich die Erreichbarkeit im Betrieb und Ihre Mitarbeiter werden entlastet.
+            </div></div>
+          </details>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 12 · FOOTER ================= -->
+<footer class="footer" data-screen-label="12 Footer">
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <span class="brand" style="color:#fff;">
+          <img src="uploads/waving-hand_1f44b.png" class="brand-icon" alt="Hey Telo" />
+          <span style="color:#fff;">Hey Telo</span>
+        </span>
+        <p class="tag">Telefon-KI speziell für Haustechnik.</p>
+        <p class="heart">Mit <span style="color:#FF5A5F;">❤</span> entwickelt in München <span>🍺</span></p>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start;">
+          <span class="yc-badge" style="padding: 6px 12px"><span class="yc-logo">Y</span> Unterstützt von Y&nbsp;Combinator</span>
+          <span class="eleven-badge" title="ElevenLabs Grants Programme"><img src="assets/elevenlabsgrants.avif" alt="ElevenLabs Grants" style="width: 220px; padding: 0px; margin: 15px 0px 0px" /></span>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Kontakt</h4>
+        <ul>
+          <li><a href="mailto:info@heytelo.com">info@heytelo.com</a></li>
+          <li><a href="tel:+498945217465">089 4521 7465</a></li>
+        </ul>
+        <h4 style="margin-top:28px;">Adresse</h4>
+        <p class="static">Münchner Technologie&nbsp;Zentrum<br>Agnes-Pockels-Bogen 1<br>80992 München</p>
+      </div>
+      <div class="footer-col">
+        <h4>Unternehmen</h4>
+        <ul>
+          <li>Preis</li>
+          <li>Kontakt</li>
+          <li>Karriere</li>
+          <li>Login</li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Ressourcen</h4>
+        <ul>
+          <li>Blog</li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Rechtliches</h4>
+        <ul>
+          <li>Impressum</li>
+          <li>Datenschutz</li>
+          <li>AGB</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026  Admyral Technologies GmbH · Alle Rechte vorbehalten.</span>
+      <div class="social">
+        <span aria-label="Facebook"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg></span>
+        <span aria-label="Instagram"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></span>
+        <span aria-label="LinkedIn"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.95v5.66H9.34V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.38-1.85 3.61 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.07 2.07 0 1 1 0-4.14 2.07 2.07 0 0 1 0 4.14zm1.78 13.02H3.56V9h3.56v11.45z"/></svg></span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+ * Logo carousel — 10 invented Handwerk firms, duplicated for seamless loop
+ * ============================================================ */
+(function () {
+  const firms = [
+    { name: 'Müller Heizung',   icon: 'flame' },
+    { name: 'SanitärProfi GmbH',icon: 'wrench' },
+    { name: 'Berger Bad & Heizung', icon: 'drop' },
+    { name: 'Klima Wolf',        icon: 'wind' },
+    { name: 'Schneider SHK',     icon: 'bolt' },
+    { name: 'Aqua-Therm Kessler',icon: 'flame' },
+    { name: 'Hofmann Installation', icon: 'tool' },
+    { name: 'NordTherm Lübeck',  icon: 'drop' },
+    { name: 'Rheinland Klima',   icon: 'wind' },
+    { name: 'Vogel & Söhne',     icon: 'tool' }
+  ];
+  const icons = {
+    flame:  '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>',
+    wrench: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg>',
+    drop:   '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69 5.5 9.5a7 7 0 1 0 13 0L12 2.69z"/></svg>',
+    wind:   '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9.59 4.59A2 2 0 1 1 11 8H2"/><path d="M17.73 18.66A2 2 0 1 0 19 15H2"/><path d="M12.59 11.41A2 2 0 1 1 14 15H2"/></svg>',
+    bolt:   '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+    tool:   '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg>'
+  };
+  const track = document.getElementById('logoTrack');
+  if (!track) return;
+  const items = firms.concat(firms).map(f =>
+    `<span class="logo-item">${icons[f.icon] || ''}<span>${f.name}</span></span>`
+  ).join('');
+  track.innerHTML = items;
+})();
+
+/* ============================================================
+ * Audio waveform bars (random heights, deterministic per card)
+ * ============================================================ */
+(function () {
+  document.querySelectorAll('.audio-bars').forEach((el, idx) => {
+    const seeds = [3,7,12,9,15,20,14,8,18,22,16,10,6,14,19,11,7,4,9,13,16,12,8,5,10,15,18,13,9,6];
+    const offset = idx * 7;
+    let html = '';
+    for (let i = 0; i < 28; i++) {
+      const h = 4 + seeds[(i + offset) % seeds.length];
+      const dur = 380 + ((i * 53 + offset * 17) % 420);
+      const del = -((i * 71 + offset * 31) % 900);
+      html += `<span style="height:${h}px; --dur:${dur}ms; --del:${del}ms"></span>`;
+    }
+    el.innerHTML = html;
+  });
+})();
+
+/* ============================================================
+ * Proof bento — uptime waveform + savings chart bars
+ * ============================================================ */
+(function () {
+  const wave = document.getElementById('proofWave');
+  if (wave) {
+    const n = 60;             // many vertical strokes = 99,99 % uptime
+    const fadedIndex = 49;    // one faded stroke = the remaining 0,01 %
+    let strokes = '';
+    for (let i = 0; i < n; i++) {
+      strokes += `<span${i === fadedIndex ? ' class="pv-down"' : ''}></span>`;
+    }
+    // duplicated set → seamless right→left marquee loop
+    wave.innerHTML = `<div class="pv-wave-track">${strokes}${strokes}</div>`;
+  }
+  const chart = document.getElementById('proofChart');
+  if (chart) {
+    const n = 22;
+    let html = '';
+    for (let i = 0; i < n; i++) {
+      const rise = i / (n - 1);                       // 0 → 1, monotonic upward
+      const jitter = (((i * 37) % 9) - 4) / 100;       // small deterministic wobble
+      const h = Math.max(10, Math.round((0.24 + rise * 0.74 + jitter) * 100));
+      html += `<span style="height:${h}%"></span>`;
+    }
+    chart.innerHTML = html;
+  }
+})();
+
+/* ============================================================
+ * Proof bento — count-up stat tiles (Erhöhte Kundenzufriedenheit)
+ * ============================================================ */
+(function () {
+  const grid = document.querySelector('.pv-stats');
+  if (!grid) return;
+  const nums = grid.querySelectorAll('b[data-count]');
+  nums.forEach(el => { el.textContent = '0%'; });   // reset (no-JS keeps final value)
+
+  let started = false;
+  const run = () => {
+    if (started) return; started = true;
+    nums.forEach(el => {
+      const target = parseInt(el.dataset.count, 10) || 0;
+      const dur = 1500, start = performance.now();
+      const tick = (now) => {
+        const p = Math.min((now - start) / dur, 1);
+        const eased = 1 - Math.pow(1 - p, 3);          // easeOutCubic
+        el.textContent = Math.round(eased * target) + '%';
+        if (p < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+  };
+
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { run(); io.disconnect(); } });
+    }, { threshold: 0.4 });
+    io.observe(grid);
+  } else {
+    run();
+  }
+})();
+
+/* ============================================================
+ * Proof bento — progress bars wipe in left→right (Nachweisbarer Erfolg)
+ * ============================================================ */
+(function () {
+  const dash = document.querySelector('.pb-nachweis .pv-dash');
+  if (!dash) return;
+  const bars = [...dash.querySelectorAll('.pv-dash-track i')];
+  const targets = bars.map(b => b.style.width);   // remember final widths
+  bars.forEach(b => { b.style.width = '0%'; });    // reset (no-JS keeps final value)
+
+  const nums = [...dash.querySelectorAll('.pv-dash-row .l b')];
+  const counts = nums.map(b => parseInt(b.textContent.replace(/\D/g, ''), 10) || 0);
+  nums.forEach(b => { b.textContent = '0'; });
+
+  let started = false;
+  const run = () => {
+    if (started) return; started = true;
+    bars.forEach((b, i) => {
+      b.style.transitionDelay = (i * 0.15) + 's';
+      b.style.width = targets[i];
+    });
+    nums.forEach((b, i) => {
+      const target = counts[i], delay = i * 150, dur = 900;
+      const start = performance.now() + delay;
+      const tick = (now) => {
+        const p = Math.min(Math.max((now - start) / dur, 0), 1);
+        const eased = 1 - Math.pow(1 - p, 3);        // easeOutCubic
+        b.textContent = Math.round(eased * target);
+        if (p < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+  };
+
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { run(); io.disconnect(); } });
+    }, { threshold: 0.4 });
+    io.observe(dash);
+  } else {
+    run();
+  }
+})();
+
+/* ============================================================
+ * Audio playback for use case cards (one-at-a-time, play/pause toggle)
+ * ============================================================ */
+(function () {
+  const cards = document.querySelectorAll('.ucard[data-audio]');
+  const players = [];
+  cards.forEach(card => {
+    const audio = new Audio(card.dataset.audio);
+    audio.preload = 'none';
+    const btn = card.querySelector('.play-btn');
+    const bars = card.querySelector('.audio-bars');
+    const iconPlay = btn.querySelector('.icon-play');
+    const iconPause = btn.querySelector('.icon-pause');
+
+    const setPlaying = (playing) => {
+      bars.classList.toggle('playing', playing);
+      iconPlay.style.display = playing ? 'none' : 'block';
+      iconPause.style.display = playing ? 'block' : 'none';
+      btn.setAttribute('aria-label', playing ? 'Pause' : 'Beispiel abspielen');
+    };
+
+    btn.addEventListener('click', () => {
+      if (audio.paused) {
+        players.forEach(p => {
+          if (p.audio !== audio && !p.audio.paused) {
+            p.audio.pause();
+            p.setPlaying(false);
+          }
+        });
+        audio.play().catch(() => setPlaying(false));
+        setPlaying(true);
+      } else {
+        audio.pause();
+        setPlaying(false);
+      }
+    });
+
+    audio.addEventListener('ended', () => {
+      audio.currentTime = 0;
+      setPlaying(false);
+    });
+    audio.addEventListener('pause', () => setPlaying(false));
+    audio.addEventListener('play', () => setPlaying(true));
+
+    players.push({ audio, setPlaying });
+  });
+})();
+
+/* ============================================================
+ * Wave emoji animation on viewport entry (twice)
+ * ============================================================ */
+(function () {
+  const el = document.getElementById('waveEmoji');
+  if (!el) return;
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        el.classList.remove('play');
+        // restart animation
+        void el.offsetWidth;
+        el.classList.add('play');
+        io.unobserve(el);
+      }
+    });
+  }, { threshold: 0.5 });
+  io.observe(el);
+})();
+
+/* ============================================================
+ * Wave emoji — scroll-synchronized waving
+ * ============================================================ */
+(function () {
+  const el = document.getElementById('waveEmoji');
+  if (!el) return;
+  let rafId = null;
+  window.addEventListener('scroll', () => {
+    if (rafId) return;
+    rafId = requestAnimationFrame(() => {
+      rafId = null;
+      el.classList.remove('play');
+      const angle = 22 * Math.sin(window.scrollY * 0.045);
+      el.style.transform = `rotate(${angle}deg)`;
+    });
+  }, { passive: true });
+})();
+
+/* ============================================================
+ * Flow — scroll-driven serpentine timeline
+ * ============================================================ */
+(function () {
+  const flow = document.getElementById('flow');
+  if (!flow) return;
+  const svg      = flow.querySelector('.flow-svg');
+  const track    = flow.querySelector('.flow-track');
+  const progress = flow.querySelector('.flow-progress');
+  const head     = flow.querySelector('.flow-head');
+  const grad     = flow.querySelector('#flowGrad');
+  const steps    = [...flow.querySelectorAll('.flow-step')];
+
+  let pathLen = 0;
+  let thresholds = [];
+
+  function roundedPath(pts, r) {
+    if (pts.length < 2) return '';
+    let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+    for (let i = 1; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1], p1 = pts[i], p2 = pts[i + 1];
+      const v1 = { x: p0.x - p1.x, y: p0.y - p1.y };
+      const v2 = { x: p2.x - p1.x, y: p2.y - p1.y };
+      const l1 = Math.hypot(v1.x, v1.y) || 1;
+      const l2 = Math.hypot(v2.x, v2.y) || 1;
+      const rr = Math.min(r, l1 / 2, l2 / 2);
+      const a = { x: p1.x + v1.x / l1 * rr, y: p1.y + v1.y / l1 * rr };
+      const b = { x: p1.x + v2.x / l2 * rr, y: p1.y + v2.y / l2 * rr };
+      d += ` L ${a.x.toFixed(1)} ${a.y.toFixed(1)} Q ${p1.x.toFixed(1)} ${p1.y.toFixed(1)} ${b.x.toFixed(1)} ${b.y.toFixed(1)}`;
+    }
+    const last = pts[pts.length - 1];
+    d += ` L ${last.x.toFixed(1)} ${last.y.toFixed(1)}`;
+    return d;
+  }
+
+  function build() {
+    const fr = flow.getBoundingClientRect();
+    const W = flow.clientWidth, H = flow.clientHeight;
+    const centers = [...flow.querySelectorAll('.flow-num')].map(n => {
+      const r = n.getBoundingClientRect();
+      return { x: r.left - fr.left + r.width / 2, y: r.top - fr.top + r.height / 2 };
+    });
+    if (!centers.length) return;
+
+    const single = centers.length > 1 && Math.abs(centers[0].x - centers[1].x) < 4; // mobile / stacked
+    const pts = [];
+    const numIdx = [];
+    if (single) {
+      pts.push({ x: centers[0].x, y: -40 });          // short stub above
+    } else {
+      pts.push({ x: centers[0].x - 72, y: -48 });     // start: upper-left
+      pts.push({ x: centers[0].x,      y: -48 });     // elbow into column 1
+    }
+    numIdx.push(pts.length);
+    pts.push(centers[0]);                              // num 1
+    for (let i = 1; i < centers.length; i++) {
+      const A = centers[i - 1], B = centers[i];
+      if (i % 2 === 1) pts.push({ x: B.x, y: A.y });  // out then down
+      else             pts.push({ x: A.x, y: B.y });  // down then in
+      numIdx.push(pts.length);
+      pts.push(B);
+    }
+    const lastC = centers[centers.length - 1];
+    pts.push({ x: lastC.x, y: Math.min(H, lastC.y + 56) }); // tail
+
+    // straight-line cumulative lengths for activation thresholds
+    const cum = [0];
+    for (let i = 1; i < pts.length; i++) {
+      cum.push(cum[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
+    }
+    const totalStraight = cum[cum.length - 1] || 1;
+    thresholds = numIdx.map(idx => cum[idx] / totalStraight);
+
+    const d = roundedPath(pts, 26);
+    track.setAttribute('d', d);
+    progress.setAttribute('d', d);
+    grad.setAttribute('y2', H);
+
+    pathLen = progress.getTotalLength();
+    progress.style.strokeDasharray = pathLen;
+    progress.style.strokeDashoffset = pathLen;
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  }
+
+  function calcProgress() {
+    const r = flow.getBoundingClientRect();
+    const vh = window.innerHeight;
+    const p = (vh * 0.72 - r.top) / (r.height * 0.72);
+    return Math.max(0, Math.min(1, p));
+  }
+
+  function render() {
+    if (!pathLen) return;
+    const p = calcProgress();
+    progress.style.strokeDashoffset = pathLen * (1 - p);
+
+    if (p > 0.001 && p < 0.999) {
+      const pt = progress.getPointAtLength(pathLen * p);
+      head.setAttribute('cx', pt.x);
+      head.setAttribute('cy', pt.y);
+      head.style.opacity = 1;
+    } else {
+      head.style.opacity = 0;
+    }
+
+    thresholds.forEach((t, k) => {
+      steps[k].classList.toggle('active', p >= t - 0.002);
+    });
+  }
+
+  let ticking = false;
+  function onScroll() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => { render(); ticking = false; });
+  }
+
+  function init() { build(); render(); }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', () => { build(); render(); });
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(init);
+  }
+  window.addEventListener('load', init);
+  init();
+})();
+
+/* ============================================================
+ * Header — toggle glass/pill style on scroll
+ * ============================================================ */
+(function () {
+  const nav = document.querySelector('.site-header .nav');
+  if (!nav) return;
+  const onScroll = () => {
+    if (window.scrollY > 8) nav.classList.add('scrolled');
+    else nav.classList.remove('scrolled');
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+})();
+
+/* ============================================================
+ * Mobile nav — hamburger toggle for the dropdown menu
+ * ============================================================ */
+(function () {
+  const btn = document.getElementById('navToggle');
+  const menu = document.getElementById('mobileMenu');
+  if (!btn || !menu) return;
+
+  const close = () => {
+    menu.hidden = true;
+    btn.classList.remove('open');
+    btn.setAttribute('aria-expanded', 'false');
+    btn.setAttribute('aria-label', 'Menü öffnen');
+  };
+  const open = () => {
+    menu.hidden = false;
+    btn.classList.add('open');
+    btn.setAttribute('aria-expanded', 'true');
+    btn.setAttribute('aria-label', 'Menü schließen');
+  };
+
+  btn.addEventListener('click', () => { menu.hidden ? open() : close(); });
+  menu.querySelectorAll('a').forEach(a => a.addEventListener('click', close));
+  window.addEventListener('resize', () => { if (window.innerWidth > 900) close(); });
+})();
+
+/* ============================================================
+ * FAQ accordion — animated open AND close
+ * ============================================================ */
+(function () {
+  document.querySelectorAll('#faqList details').forEach(d => {
+    const inner = d.querySelector('.faq-a');
+    if (!inner) return;
+
+    // Set initial state without animation
+    if (d.open) {
+      d.classList.add('open');
+      inner.style.maxHeight = inner.scrollHeight + 'px';
+    } else {
+      inner.style.maxHeight = '0px';
+    }
+
+    d.querySelector('summary').addEventListener('click', e => {
+      e.preventDefault();
+
+      if (d.open) {
+        // CLOSING: lock explicit height, then animate to 0, remove open after
+        inner.style.maxHeight = inner.scrollHeight + 'px';
+        d.classList.remove('open');
+        requestAnimationFrame(() => {
+          inner.style.maxHeight = '0px';
+        });
+        inner.addEventListener('transitionend', () => {
+          d.removeAttribute('open');
+        }, { once: true });
+      } else {
+        // OPENING: add open so content is in the DOM, then animate height
+        d.setAttribute('open', '');
+        d.classList.add('open');
+        requestAnimationFrame(() => {
+          inner.style.maxHeight = inner.scrollHeight + 'px';
+        });
+      }
+    });
+  });
+})();
+</script>
+
+<!-- Cal.com Inline-Embed → cal.com/christopher-grittner/demo?duration=20 -->
+<script type="text/javascript">
+  (function (C, A, L) { let p = function (a, ar) { a.q.push(ar); }; let d = C.document; C.Cal = C.Cal || function () { let cal = C.Cal; let ar = arguments; if (!cal.loaded) { cal.ns = {}; cal.q = cal.q || []; d.head.appendChild(d.createElement("script")).src = A; cal.loaded = true; } if (ar[0] === L) { const api = function () { p(api, arguments); }; const namespace = ar[1]; api.q = api.q || []; if (typeof namespace === "string") { cal.ns[namespace] = cal.ns[namespace] || api; p(cal.ns[namespace], ar); p(cal, ["initNamespace", namespace]); } else p(cal, ar); return; } p(cal, ar); }; })(window, "https://app.cal.com/embed/embed.js", "init");
+
+  Cal("init", "demo", { origin: "https://cal.com" });
+
+  Cal.ns.demo("inline", {
+    elementOrSelector: "#cal-inline",
+    config: { layout: "month_view", duration: "20" },
+    calLink: "christopher-grittner/demo",
+  });
+
+  Cal.ns.demo("ui", {
+    hideEventTypeDetails: false,
+    layout: "month_view",
+    cssVarsPerTheme: {
+      light: { "cal-brand": "#20514C" },
+      dark: { "cal-brand": "#C8F17A" },
+    },
+  });
+</script>
+</body>
+</html>
+
+<style id="__om-edit-overrides">
+</style>

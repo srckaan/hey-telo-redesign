@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="author" content="Kaan Sürücü – kaan@surucu.de" />
 <title>Hey Telo — Die Telefon-KI für Haustechnik-Betriebe</title>
-<link rel="stylesheet" href="assets/telo.css" />
+<link rel="icon" type="image/png" sizes="32x32" href="/uploads/waving-hand_1f44b-32.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="/uploads/waving-hand_1f44b-192.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="/uploads/waving-hand_1f44b-180.png" />
+<link rel="stylesheet" href="uploads/telo.css" />
 <style>
   /* ============================================================
    * Base
@@ -127,7 +130,7 @@
     /* No overflow:hidden — the CTA box is allowed to dip past the bottom edge
        so it bridges onto the logo slider (see .phone-cta-wrap drop below).
        The background still clips to the radius; the vignette is rounded too. */
-    background: url("assets/hero_background.png") center/cover no-repeat,
+    background: url("uploads/hero_background.png") center/cover no-repeat,
                 #112E2A;
     color: #fff;
     /* Bottom pad reserves room above the dropped CTA box so the centered copy
@@ -791,13 +794,14 @@
     border-radius: 14px;
     padding: 16px;
     display: flex; flex-direction: column; gap: 4px;
+    min-width: 0; /* allow tiles to shrink so long words don't blow out the grid */
   }
   .pv-stat b {
     font-family: var(--font-display); font-weight: 700;
     font-size: 28px; line-height: 1; color: var(--color-secondary);
     font-variant-numeric: tabular-nums;
   }
-  .pv-stat span { font-size: 12.5px; line-height: 1.3; font-weight: 500; color: rgba(255, 255, 255, 0.82); }
+  .pv-stat span { font-size: 12.5px; line-height: 1.3; font-weight: 500; color: rgba(255, 255, 255, 0.82); overflow-wrap: break-word; hyphens: auto; }
 
   /* team-relief photo with brand gradient overlay */
   .pv-photo {
@@ -1133,6 +1137,10 @@
     .mobile-menu { display: flex; }
     .mobile-menu[hidden] { display: none; }
 
+    /* Pull the floating header closer to the top edge on mobile. */
+    .site-header { top: 8px; }
+    .mobile-menu { top: 72px; }
+
     /* Section rhythm — tighter on small screens */
     .section { padding: 72px 0; }
     .section-tight { padding: 64px 0; }
@@ -1189,7 +1197,7 @@
     .section-tight { padding: 52px 0; }
     .sect-head { margin-bottom: 32px; }
 
-    .hero-wrap { padding: 96px 12px 12px; }
+    .hero-wrap { padding: 85px 12px 12px; }
     .hero { padding: 52px 16px 52px; border-radius: 28px; }
 
     /* Logo eyebrow: drop the flanking rules so the wide label can centre and
@@ -1951,7 +1959,7 @@
         <p class="heart">Mit <span style="color:#FF5A5F;">❤</span> entwickelt in München <span>🍺</span></p>
         <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start;">
           <span class="yc-badge" style="padding: 6px 12px"><span class="yc-logo">Y</span> Unterstützt von Y&nbsp;Combinator</span>
-          <span class="eleven-badge" title="ElevenLabs Grants Programme"><img src="assets/elevenlabsgrants.avif" alt="ElevenLabs Grants" style="width: 220px; padding: 0px; margin: 15px 0px 0px" /></span>
+          <span class="eleven-badge" title="ElevenLabs Grants Programme"><img src="uploads/elevenlabsgrants.avif" alt="ElevenLabs Grants" style="width: 220px; padding: 0px; margin: 15px 0px 0px" /></span>
         </div>
       </div>
       <div class="footer-col">

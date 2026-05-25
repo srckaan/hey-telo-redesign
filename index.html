@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="author" content="Kaan Sürücü – kaan@surucu.de" />
 <title>Hey Telo — Die Telefon-KI für Haustechnik-Betriebe</title>
-<link rel="icon" type="image/png" sizes="32x32" href="/uploads/waving-hand_1f44b-32.png" />
-<link rel="icon" type="image/png" sizes="192x192" href="/uploads/waving-hand_1f44b-192.png" />
-<link rel="apple-touch-icon" sizes="180x180" href="/uploads/waving-hand_1f44b-180.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="uploads/waving-hand_1f44b-32.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="uploads/waving-hand_1f44b-192.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="uploads/waving-hand_1f44b-180.png" />
 <link rel="stylesheet" href="uploads/telo.css" />
 <style>
   /* ============================================================
@@ -92,26 +92,57 @@
   .nav-toggle.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
   .mobile-menu {
-    display: none;
-    position: fixed; top: 80px; left: 16px; right: 16px; z-index: 99;
-    flex-direction: column; gap: 2px;
-    padding: 12px;
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(18px) saturate(140%);
-    -webkit-backdrop-filter: blur(18px) saturate(140%);
-    border: 1px solid rgba(255, 255, 255, 0.7);
-    border-radius: 24px;
-    box-shadow: 0 16px 40px -10px rgba(14, 36, 33, 0.22);
+    display: flex;
+    position: fixed; inset: 0; z-index: 99;
+    flex-direction: column; justify-content: flex-start; gap: 0;
+    padding: 96px 26px 40px;
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 280ms var(--ease-out),
+                visibility 0ms linear 280ms;
   }
-  .mobile-menu[hidden] { display: none; }
+  .mobile-menu.is-open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition: opacity 280ms var(--ease-out),
+                visibility 0ms linear 0ms;
+  }
   .mobile-menu a {
-    padding: 13px 14px; border-radius: 14px;
-    font-size: 16px; font-weight: 500; color: var(--text-primary);
-    transition: background var(--t-fast) var(--ease-out);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 6px;
+    font-size: 21px; font-weight: 600; color: var(--text-primary);
+    border-bottom: 1px solid var(--border-light);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: color var(--t-fast) var(--ease-out),
+                opacity 240ms var(--ease-out),
+                transform 240ms var(--ease-out);
   }
-  .mobile-menu a:hover, .mobile-menu a:active { background: rgba(14, 36, 33, 0.06); }
-  .mobile-menu .mm-cta { margin-top: 8px; padding: 0; }
+  .mobile-menu a:not(.mm-cta)::after {
+    content: "›";
+    font-size: 22px; font-weight: 400;
+    color: var(--text-muted);
+    flex: none;
+  }
+  .mobile-menu.is-open a:nth-child(1) { opacity: 1; transform: none; transition-delay: 90ms; }
+  .mobile-menu.is-open a:nth-child(2) { opacity: 1; transform: none; transition-delay: 120ms; }
+  .mobile-menu.is-open a:nth-child(3) { opacity: 1; transform: none; transition-delay: 150ms; }
+  .mobile-menu.is-open a:nth-child(4) { opacity: 1; transform: none; transition-delay: 180ms; }
+  .mobile-menu.is-open a:nth-child(5) { opacity: 1; transform: none; transition-delay: 210ms; }
+  .mobile-menu.is-open a:nth-child(6) { opacity: 1; transform: none; transition-delay: 240ms; }
+  .mobile-menu a:not(.mm-cta):hover, .mobile-menu a:not(.mm-cta):active { color: var(--color-primary); }
+  .mobile-menu .mm-cta { margin-top: 24px; padding: 0; border-bottom: none; }
   .mobile-menu .mm-cta:hover { background: transparent; }
+  .mobile-menu .mm-cta .btn-lime::after {
+    content: "›";
+    margin-left: auto;
+    font-size: 22px; font-weight: 400;
+  }
 
   /* ============================================================
    * Hero card
@@ -1134,12 +1165,8 @@
     .nav-links { display: none; }
     .nav-right { display: none; }
     .nav-toggle { display: flex; }
-    .mobile-menu { display: flex; }
-    .mobile-menu[hidden] { display: none; }
-
     /* Pull the floating header closer to the top edge on mobile. */
     .site-header { top: 8px; }
-    .mobile-menu { top: 72px; }
 
     /* Section rhythm — tighter on small screens */
     .section { padding: 72px 0; }
@@ -1240,10 +1267,10 @@
 <!-- ================= 0 · HEADER ================= -->
 <header class="site-header" data-screen-label="00 Header">
   <nav class="nav">
-    <span class="brand">
+    <a href="." class="brand">
       <img src="uploads/waving-hand_1f44b.png" class="brand-icon" alt="Hey Telo" />
       <span style="font-weight: 600">Hey Telo</span>
-    </span>
+    </a>
     <div class="nav-links">
       <span>Integrationen</span>
       <span>Preis</span>
@@ -1258,17 +1285,17 @@
       <span></span><span></span><span></span>
     </button>
   </nav>
-  <div class="mobile-menu" id="mobileMenu" hidden>
-    <a href="#integrationen">Integrationen</a>
-    <a href="#">Preis</a>
-    <a href="#">Blog</a>
-    <a href="#">Kontakt</a>
-    <a href="#" class="nav-link-login">Login</a>
-    <a href="#demo-section" class="mm-cta">
-      <button class="btn-lime" style="width:100%; justify-content:center;">Kostenlos testen</button>
-    </a>
-  </div>
 </header>
+<div class="mobile-menu" id="mobileMenu">
+  <a>Integrationen</a>
+  <a>Preis</a>
+  <a>Blog</a>
+  <a>Kontakt</a>
+  <a class="nav-link-login">Login</a>
+  <a class="mm-cta">
+    <button class="btn-lime" style="width:100%; justify-content:flex-start;">Kostenlos testen</button>
+  </a>
+</div>
 
 <!-- ================= 1 · HERO ================= -->
 <div class="hero-wrap">
@@ -1644,10 +1671,10 @@
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
           </span>
           <h4>Garantierte Zuverlässigkeit</h4>
-          <p>Hey Telo ist rund um die Uhr erreichbar. Mit 99,99&nbsp;% Verfügbarkeit nimmt jeder Anruf seinen Weg — Tag und Nacht.</p>
+          <p>Hey Telo ist rund um die Uhr erreichbar. Jeder ankommende Anruf nimmt seinen Weg — Tag und Nacht.</p>
           <div class="pcard-visual">
             <div class="pv-wave" id="proofWave" aria-hidden="true"></div>
-            <div class="pv-uptime">99,99&nbsp;% <span>Verfügbarkeit</span></div>
+            <div class="pv-uptime"><span style="font-family: var(--font-sans);">99,99&nbsp;%</span> <span>Verfügbarkeit</span></div>
           </div>
         </article>
 
@@ -2402,19 +2429,21 @@
   if (!btn || !menu) return;
 
   const close = () => {
-    menu.hidden = true;
+    menu.classList.remove('is-open');
     btn.classList.remove('open');
     btn.setAttribute('aria-expanded', 'false');
     btn.setAttribute('aria-label', 'Menü öffnen');
+    document.body.style.overflow = '';
   };
   const open = () => {
-    menu.hidden = false;
+    menu.classList.add('is-open');
     btn.classList.add('open');
     btn.setAttribute('aria-expanded', 'true');
     btn.setAttribute('aria-label', 'Menü schließen');
+    document.body.style.overflow = 'hidden';
   };
 
-  btn.addEventListener('click', () => { menu.hidden ? open() : close(); });
+  btn.addEventListener('click', () => { menu.classList.contains('is-open') ? close() : open(); });
   menu.querySelectorAll('a').forEach(a => a.addEventListener('click', close));
   window.addEventListener('resize', () => { if (window.innerWidth > 900) close(); });
 })();
